@@ -49,7 +49,18 @@ If a feature doesn't help build a sustainable weekly rhythm, it's out of scope.
 
 **Out (parked):** standalone resource library/vault, categories, child age/grade,
 streaks, %-complete bars, push notifications, social/community, meetups, AI,
-courses, household / co-parent sharing.
+courses, household / co-parent sharing, kid access (see Roadmap).
+
+### Roadmap (post-MVP, not now)
+
+- **Kid Mode** — let a child *view and complete* their own tasks for independence
+  (esp. older kids), while the parent remains the sole editor/author of the plan.
+  When built, do the **lightweight** version first: on the parent's account/device,
+  select a child → their filtered Today → they check off → a PIN returns to the
+  parent's edit view. **No kid logins.** This stays inside the single-owner model
+  (the kid is a viewer/completer, not a co-author) and reuses the per-child Today
+  (S3/S4) + `completed` flag already built. Avoid "Kid Accounts" (separate logins
+  for minors) — it reopens multi-user-per-family and needs a second auth system.
 
 ## Design Principles
 
