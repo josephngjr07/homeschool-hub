@@ -10,8 +10,8 @@
   --card: #fbfaf5; /* slightly lighter surface for cards */
   --muted: #6f6a60; /* warm gray secondary text */
   --border: #e4ded1; /* soft warm border */
-  --accent: #6f9b96; /* dusty sage/teal — fills, decorative */
-  --accent-strong: #4d756f; /* darker sage — readable text/links on cream */
+  --accent: #c77b5c; /* warm terracotta/clay — fills, decorative */
+  --accent-strong: #9e5436; /* darker clay — readable text/links on cream */
   --accent-foreground: #ffffff;
 }
 
