@@ -23,6 +23,46 @@ model User {
   image         String?
   accounts      Account[]
   sessions      Session[]
+  children      Child[]
+  tasks         Task[]
+}
+
+// --- Domain models --------------------------------------------------------
+
+// A kid the parent homeschools. In the UI a Child is primarily a colored
+// tag/filter on Tasks (name + color), not a profile to manage. Always scoped
+// to its owning User — a parent only ever sees their own children.
+model Child {
+  id        String   @id @default(cuid())
+  name      String
+  color     String
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks  Task[]
+
+  @@index([userId])
+}
+
+// A planned learning activity for a specific day, assigned to one or more
+// Children, checked off when done. "Everyone" is represented by linking the
+// Task to all of the parent's current children — one Task row, never one per
+// child. Unfinished Tasks silently stay on their date (ADR-0001): no overdue
+// state lives here; "missed" is computed at read time, never stored.
+model Task {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  date        DateTime @db.Date
+  completed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  userId   String
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  children Child[]
+
+  @@index([userId, date])
 }
 
 model Account {

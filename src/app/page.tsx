@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { auth, signIn, signOut } from "@/auth";
 
 // A React Server Component: it runs on the server, so it can read the session
@@ -12,6 +13,18 @@ export default async function Home() {
           <h1 className="text-2xl font-semibold">
             Hello, {session.user.name ?? "friend"} 👋
           </h1>
+          <Link
+            href="/today"
+            className="rounded-full bg-black px-5 py-2 text-sm font-medium text-white hover:opacity-90"
+          >
+            Open Today →
+          </Link>
+          <Link
+            href="/children"
+            className="rounded-full border px-5 py-2 text-sm hover:bg-black/5"
+          >
+            Manage children
+          </Link>
           {/* Server Action: runs on the server when the form is submitted. */}
           <form
             action={async () => {
