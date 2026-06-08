@@ -26,7 +26,7 @@ export function ChildChip({
           await updateChildAction(formData);
           setEditing(false);
         }}
-        className="inline-flex items-center gap-2 rounded-full border border-black/15 px-3 py-1.5"
+        className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5"
       >
         <input type="hidden" name="id" value={id} readOnly />
         <input
@@ -34,20 +34,20 @@ export function ChildChip({
           defaultValue={name}
           required
           maxLength={40}
-          className="w-24 bg-transparent text-sm outline-none"
+          className="w-24 bg-transparent text-sm text-foreground outline-none"
           aria-label="Child's name"
         />
         <ColorPicker name="color" defaultValue={color} />
         <button
           type="submit"
-          className="text-xs font-semibold text-black/70 hover:text-black"
+          className="text-xs font-semibold text-accent-strong hover:underline"
         >
           Save
         </button>
         <button
           type="button"
           onClick={() => setEditing(false)}
-          className="text-xs text-black/40 hover:text-black/70"
+          className="text-xs text-muted hover:text-foreground"
         >
           Cancel
         </button>
@@ -56,7 +56,7 @@ export function ChildChip({
   }
 
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-black/[0.03] px-3 py-1.5 text-sm font-medium text-black/80">
+    <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground">
       <span
         className="h-2.5 w-2.5 shrink-0 rounded-full"
         style={{ backgroundColor: color }}
@@ -67,7 +67,7 @@ export function ChildChip({
         type="button"
         onClick={() => setEditing(true)}
         aria-label={`Edit ${name}`}
-        className="text-black/30 hover:text-black/70"
+        className="text-muted hover:text-foreground"
       >
         ✎
       </button>
@@ -76,7 +76,7 @@ export function ChildChip({
         <button
           type="submit"
           aria-label={`Delete ${name}`}
-          className="text-black/30 hover:text-black/70"
+          className="text-muted hover:text-foreground"
         >
           ✕
         </button>

@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getUserId } from "@/lib/session";
 import { listChildren } from "@/data/children";
 import { getTasksForDate } from "@/data/tasks";
@@ -29,22 +29,12 @@ export default async function TodayPage({
   const doneCount = tasks.filter((t) => t.completed).length;
 
   return (
-    <main className="mx-auto w-full max-w-md px-5 py-8">
-      <div className="flex items-center justify-between">
-        <Link href="/" className="text-sm text-black/40 hover:text-black/70">
-          ← Home
-        </Link>
-        <Link
-          href="/children"
-          className="text-sm text-black/40 hover:text-black/70"
-        >
-          Children
-        </Link>
-      </div>
-
-      <header className="mt-4">
-        <h1 className="text-2xl font-semibold tracking-tight">Today</h1>
-        <p className="text-sm text-black/50">{formatLongDate(today)}</p>
+    <main className="px-5 py-8">
+      <header>
+        <p className="text-sm text-muted">{formatLongDate(today)}</p>
+        <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight">
+          Today
+        </h1>
       </header>
 
       {children.length > 0 && (
@@ -64,7 +54,7 @@ export default async function TodayPage({
 
       <section className="mt-5 space-y-2">
         {tasks.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-black/10 px-4 py-10 text-center text-sm text-black/40">
+          <p className="rounded-2xl border border-dashed border-border px-4 py-10 text-center text-sm text-muted">
             Nothing planned today. Add something below.
           </p>
         ) : (
@@ -84,7 +74,7 @@ export default async function TodayPage({
       {/* Win-only positive feedback (ADR-0001): celebrate what's done, never
           highlight what's missed. */}
       {doneCount > 0 && (
-        <p className="mt-3 text-center text-xs font-medium text-emerald-600">
+        <p className="mt-3 text-center text-xs font-medium text-accent-strong">
           ✓ {doneCount} done today
         </p>
       )}
@@ -110,10 +100,10 @@ function FilterChip({
   return (
     <Link
       href={href}
-      className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
+      className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition ${
         active
-          ? "bg-black text-white"
-          : "bg-black/5 text-black/60 hover:bg-black/10"
+          ? "bg-foreground text-background"
+          : "border border-border bg-card text-muted hover:text-foreground"
       }`}
     >
       {color ? (
