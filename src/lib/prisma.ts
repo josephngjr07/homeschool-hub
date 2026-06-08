@@ -7,7 +7,15 @@ const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
 };
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient();
+// Under Vitest, talk to the local throwaway test database instead of Neon, so
+// integration tests can freely create/wipe rows without ever touching real
+// (dev/prod) data. Everywhere else this is just the default DATABASE_URL.
+const datasourceUrl = process.env.VITEST
+  ? process.env.TEST_DATABASE_URL
+  : undefined;
+
+export const prisma =
+  globalForPrisma.prisma ?? new PrismaClient({ datasourceUrl });
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
