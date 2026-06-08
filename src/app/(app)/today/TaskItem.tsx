@@ -22,14 +22,14 @@ export function TaskItem({
       <input type="hidden" name="completed" value={(!completed).toString()} />
       <button
         type="submit"
-        className="flex w-full items-start gap-3 rounded-2xl border border-black/5 bg-white px-4 py-3 text-left shadow-sm transition hover:border-black/15"
+        className="flex w-full items-start gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-left shadow-sm transition hover:border-accent"
       >
         <span
           aria-hidden
           className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] ${
             completed
-              ? "border-emerald-500 bg-emerald-500 text-white"
-              : "border-black/25"
+              ? "border-accent bg-accent text-accent-foreground"
+              : "border-foreground/25"
           }`}
         >
           {completed ? "✓" : ""}
@@ -38,17 +38,13 @@ export function TaskItem({
         <span className="min-w-0 flex-1">
           <span
             className={`block text-sm font-medium ${
-              completed ? "text-black/40 line-through" : "text-black/85"
+              completed ? "text-muted line-through" : "text-foreground"
             }`}
           >
             {title}
           </span>
           {description ? (
-            <span
-              className={`mt-0.5 block text-xs ${
-                completed ? "text-black/30" : "text-black/50"
-              }`}
-            >
+            <span className="mt-0.5 block text-xs text-muted">
               {description}
             </span>
           ) : null}
@@ -59,7 +55,7 @@ export function TaskItem({
             {assignedTo.map((c) => (
               <span
                 key={c.id}
-                className="h-2.5 w-2.5 rounded-full ring-2 ring-white"
+                className="h-2.5 w-2.5 rounded-full ring-2 ring-card"
                 style={{ backgroundColor: c.color }}
                 title={c.name}
               />

@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { getUserId } from "@/lib/session";
 import { listChildren } from "@/data/children";
 import { AddChildForm } from "./AddChildForm";
@@ -14,13 +13,11 @@ export default async function ChildrenPage() {
   const children = await listChildren(userId);
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-6 py-10">
-      <Link href="/" className="text-sm text-black/50 hover:text-black/80">
-        ← Home
-      </Link>
-
-      <h1 className="mt-4 text-2xl font-semibold">Children</h1>
-      <p className="mt-1 text-sm text-black/60">
+    <main className="px-5 py-8">
+      <h1 className="font-display text-3xl font-semibold tracking-tight">
+        Children
+      </h1>
+      <p className="mt-1 text-sm text-muted">
         Add each child as a colored chip. You can rename, recolor, or remove
         them anytime.
       </p>
@@ -30,7 +27,7 @@ export default async function ChildrenPage() {
       </div>
 
       {children.length === 0 ? (
-        <p className="mt-8 text-sm text-black/50">
+        <p className="mt-8 text-sm text-muted">
           No children yet — add your first above.
         </p>
       ) : (

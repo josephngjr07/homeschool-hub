@@ -18,19 +18,19 @@ export function AddChildForm() {
         await createChildAction(formData);
         formRef.current?.reset();
       }}
-      className="flex flex-wrap items-center gap-3"
+      className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm"
     >
       <input
         name="name"
         required
         maxLength={40}
         placeholder="Child's name"
-        className="rounded-lg border border-black/15 px-3 py-2 text-sm outline-none focus:border-black/40"
+        className="rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted focus:border-accent"
       />
       <ColorPicker defaultValue={DEFAULT_CHILD_COLOR} />
       <button
         type="submit"
-        className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+        className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"
       >
         Add child
       </button>

@@ -1,24 +1,36 @@
 @import "tailwindcss";
 
 :root {
-  /* The UI is designed light-first for the MVP. Lock to a light theme so it
-     stays readable even when the OS is in dark mode (proper dark-mode support
-     is an S8 polish item). color-scheme keeps native controls — e.g. the date
-     picker — light too. */
+  /* Warm, cream design foundation (inspired by the "Highlight" reference).
+     Light-only for the MVP; proper dark mode is an S8 polish item. */
   color-scheme: light;
-  --background: #ffffff;
-  --foreground: #171717;
+
+  --background: #f1efe6; /* warm cream canvas */
+  --foreground: #2b2823; /* warm near-black text */
+  --card: #fbfaf5; /* slightly lighter surface for cards */
+  --muted: #6f6a60; /* warm gray secondary text */
+  --border: #e4ded1; /* soft warm border */
+  --accent: #6f9b96; /* dusty sage/teal — fills, decorative */
+  --accent-strong: #4d756f; /* darker sage — readable text/links on cream */
+  --accent-foreground: #ffffff;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-foreground: var(--accent-foreground);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-fraunces); /* serif, for headings/display */
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }

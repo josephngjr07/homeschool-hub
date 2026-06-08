@@ -38,20 +38,20 @@ export function AddTaskForm({
         formRef.current?.reset();
         setSelected(allIds);
       }}
-      className="rounded-2xl border border-black/10 bg-white p-4 shadow-sm"
+      className="rounded-2xl border border-border bg-card p-4 shadow-sm"
     >
       <input
         name="title"
         required
         maxLength={120}
         placeholder="Add a task…"
-        className="w-full text-sm outline-none placeholder:text-black/40"
+        className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted"
       />
       <input
         name="description"
         maxLength={200}
         placeholder="Notes (optional)"
-        className="mt-2 w-full text-xs outline-none placeholder:text-black/30"
+        className="mt-2 w-full bg-transparent text-xs text-foreground outline-none placeholder:text-muted/70"
       />
 
       {childOptions.length > 0 && (
@@ -59,8 +59,10 @@ export function AddTaskForm({
           <button
             type="button"
             onClick={() => setSelected(allIds)}
-            className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-              everyone ? "bg-black text-white" : "bg-black/5 text-black/60"
+            className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
+              everyone
+                ? "bg-foreground text-background"
+                : "border border-border text-muted"
             }`}
           >
             Everyone
@@ -72,8 +74,8 @@ export function AddTaskForm({
                 key={c.id}
                 type="button"
                 onClick={() => toggle(c.id)}
-                className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
-                  on ? "text-white" : "bg-black/5 text-black/60"
+                className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition ${
+                  on ? "text-white" : "border border-border text-muted"
                 }`}
                 style={on ? { backgroundColor: c.color } : undefined}
               >
@@ -94,11 +96,11 @@ export function AddTaskForm({
           name="date"
           defaultValue={today}
           aria-label="Task date"
-          className="rounded-lg border border-black/10 px-2 py-1 text-xs text-black/60"
+          className="rounded-lg border border-border bg-transparent px-2 py-1 text-xs text-muted"
         />
         <button
           type="submit"
-          className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+          className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"
         >
           Add
         </button>
