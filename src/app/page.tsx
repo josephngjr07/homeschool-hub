@@ -14,10 +14,16 @@ export default async function Home() {
             Hello, {session.user.name ?? "friend"} 👋
           </h1>
           <Link
+            href="/today"
+            className="rounded-full bg-black px-5 py-2 text-sm font-medium text-white hover:opacity-90"
+          >
+            Open Today →
+          </Link>
+          <Link
             href="/children"
             className="rounded-full border px-5 py-2 text-sm hover:bg-black/5"
           >
-            Manage children →
+            Manage children
           </Link>
           {/* Server Action: runs on the server when the form is submitted. */}
           <form
