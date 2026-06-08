@@ -16,4 +16,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     }),
   ],
+  callbacks: {
+    // Database sessions: `user` is the Postgres row. Expose its id on the
+    // session so the rest of the app can scope every query to this parent.
+    session({ session, user }) {
+      session.user.id = user.id;
+      return session;
+    },
+  },
 });
