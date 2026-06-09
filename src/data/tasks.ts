@@ -208,6 +208,57 @@ export function countCompletedInRange(userId: string, start: Date, end: Date) {
   });
 }
 
+// The full win-only recap for a week: the total completed, plus a breakdown by
+// who. A completed Task for exactly one child is a win for that child; one
+// shared across children (or the whole family) counts as a "together" win. By
+// construction this can only ever surface what got done — there is no incomplete
+// count, ratio, or percentage anywhere (ADR-0001).
+export type WeeklyRecap = {
+  total: number;
+  perChild: { id: string; name: string; color: string; count: number }[];
+  together: number;
+};
+
+export async function weeklyRecap(
+  userId: string,
+  start: Date,
+  end: Date,
+): Promise<WeeklyRecap> {
+  const tasks = await prisma.task.findMany({
+    where: { userId, completed: true, date: { gte: start, lte: end } },
+    include: { children: true },
+  });
+
+  const byChild = new Map<
+    string,
+    { id: string; name: string; color: string; count: number }
+  >();
+  let together = 0;
+
+  for (const t of tasks) {
+    if (t.children.length === 1) {
+      const c = t.children[0];
+      const entry = byChild.get(c.id) ?? {
+        id: c.id,
+        name: c.name,
+        color: c.color,
+        count: 0,
+      };
+      entry.count += 1;
+      byChild.set(c.id, entry);
+    } else {
+      // Shared across kids, the whole family, or unassigned — a together win.
+      together += 1;
+    }
+  }
+
+  const perChild = [...byChild.values()].sort(
+    (a, b) => b.count - a.count || a.name.localeCompare(b.name),
+  );
+
+  return { total: tasks.length, perChild, together };
+}
+
 // Set completion, only if the Task belongs to the parent. Returns the updated
 // Task, or null if it wasn't theirs.
 export async function setTaskCompleted(
