@@ -1,15 +1,51 @@
-// Dates are stored as @db.Date (no time, no zone). We work in UTC-midnight
-// Dates so what's saved and what's queried always line up.
+// Dates are stored as @db.Date (no time, no zone). We represent each calendar
+// day as a Date at UTC midnight, so what we save and what we query always line
+// up. "Today" is resolved in the family's local timezone (not the server's
+// UTC), so the app shows the right day for a GMT+8 user even when UTC has
+// already rolled over.
 //
-// NOTE (known limitation): "today" is computed in UTC, so near midnight a
-// parent in another timezone could briefly see the adjacent day. Fine for the
-// MVP; revisit with the parent's timezone when we polish.
+// (Single timezone is fine for this family app; make it per-user later.)
+export const APP_TIME_ZONE = "Asia/Singapore"; // GMT+8
 
-export function todayUTC(): Date {
-  const now = new Date();
-  return new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-  );
+// en-CA formats as YYYY-MM-DD, which `new Date(...)` reads as UTC midnight.
+function ymdInZone(d: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
+// The current calendar day in the family's timezone, as a UTC-midnight Date.
+export function todayInZone(timeZone = APP_TIME_ZONE): Date {
+  return new Date(ymdInZone(new Date(), timeZone));
+}
+
+export function addDays(date: Date, days: number): Date {
+  const d = new Date(date);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d;
+}
+
+// Monday as the start of the week. Returns the Monday on/just before `date`.
+export function startOfWeek(date: Date): Date {
+  const dow = date.getUTCDay(); // 0=Sun … 6=Sat
+  const daysSinceMonday = (dow + 6) % 7;
+  return addDays(date, -daysSinceMonday);
+}
+
+// The seven UTC-midnight Dates Mon…Sun for the week containing `start`'s Monday.
+export function weekDates(start: Date): Date[] {
+  return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+}
+
+export function isSameDay(a: Date, b: Date): boolean {
+  return a.getTime() === b.getTime(); // both UTC-midnight
+}
+
+export function isBefore(a: Date, b: Date): boolean {
+  return a.getTime() < b.getTime();
 }
 
 // A YYYY-MM-DD string suitable for <input type="date"> and for new Date(...).
@@ -21,6 +57,15 @@ export function formatLongDate(d: Date): string {
   return d.toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+export function formatShortDate(d: Date): string {
+  return d.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
     day: "numeric",
     timeZone: "UTC",
   });
