@@ -2,9 +2,21 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "@/lib/session";
-import { createTask, setTaskCompleted } from "@/data/tasks";
+import {
+  createTask,
+  setTaskCompleted,
+  updateTask,
+  deleteTask,
+} from "@/data/tasks";
 
-// Server Actions for the Today loop. Both re-check auth and scope to the parent.
+// Server Actions for the Today loop. Each re-checks auth and scopes to the
+// parent. Completing/editing a task also shows up on the Plan and the
+// Dashboard recap, so refresh those too.
+function revalidateToday() {
+  revalidatePath("/today");
+  revalidatePath("/plan");
+  revalidatePath("/dashboard");
+}
 
 export async function createTaskAction(formData: FormData) {
   const userId = await requireUserId();
@@ -26,7 +38,7 @@ export async function createTaskAction(formData: FormData) {
     date: new Date(dateStr),
     childIds,
   });
-  revalidatePath("/today");
+  revalidateToday();
 }
 
 export async function setTaskCompletedAction(formData: FormData) {
@@ -36,5 +48,34 @@ export async function setTaskCompletedAction(formData: FormData) {
   if (!id) return;
 
   await setTaskCompleted(userId, id, completed);
-  revalidatePath("/today");
+  revalidateToday();
+}
+
+export async function updateTaskAction(formData: FormData) {
+  const userId = await requireUserId();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const url = String(formData.get("url") ?? "").trim();
+  const dateStr = String(formData.get("date") ?? "");
+  const childIds = formData.getAll("childIds").map(String).filter(Boolean);
+
+  await updateTask(userId, id, {
+    ...(title ? { title } : {}),
+    description: description || null,
+    url: url || null,
+    ...(dateStr ? { date: new Date(dateStr) } : {}),
+    childIds,
+  });
+  revalidateToday();
+}
+
+export async function deleteTaskAction(formData: FormData) {
+  const userId = await requireUserId();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  await deleteTask(userId, id);
+  revalidateToday();
 }
