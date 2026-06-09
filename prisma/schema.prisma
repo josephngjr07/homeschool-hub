@@ -25,6 +25,10 @@ model User {
   // brand-new: send them through Onboarding so they never face an empty
   // planner (S7). Clearing the Starter week later doesn't re-trigger setup.
   onboardedAt   DateTime?
+  // The parent's own reason for homeschooling, shown gently on the home page as
+  // a reminder of the "why". Null = not written yet (we show encouragement
+  // instead). Her words, editable — never prescribed.
+  mission       String?
   accounts      Account[]
   sessions      Session[]
   children      Child[]

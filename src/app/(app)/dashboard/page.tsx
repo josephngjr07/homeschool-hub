@@ -3,12 +3,15 @@ import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
 import { listChildren } from "@/data/children";
 import { getTasksForDate, countCompletedInRange } from "@/data/tasks";
+import { getMission } from "@/data/profile";
 import {
   todayInZone,
   formatLongDate,
   startOfWeek,
   addDays,
 } from "@/lib/date";
+import { encouragementForWeek } from "@/lib/encouragement";
+import { MissionCard } from "./MissionCard";
 
 function greeting(): string {
   const hour = new Date().getUTCHours();
@@ -26,10 +29,11 @@ export default async function DashboardPage() {
 
   const today = todayInZone();
   const weekStart = startOfWeek(today);
-  const [children, tasks, weekWins] = await Promise.all([
+  const [children, tasks, weekWins, mission] = await Promise.all([
     listChildren(userId),
     getTasksForDate(userId, today),
     countCompletedInRange(userId, weekStart, addDays(weekStart, 6)),
+    getMission(userId),
   ]);
   const doneCount = tasks.filter((t) => t.completed).length;
   const firstName = session.user?.name?.split(" ")[0] ?? "there";
@@ -46,6 +50,12 @@ export default async function DashboardPage() {
           {greeting()}, {firstName}
         </h1>
       </header>
+
+      {/* The parent's "why" (or a gentle encouragement until she writes one). */}
+      <MissionCard
+        mission={mission}
+        encouragement={encouragementForWeek(weekStart)}
+      />
 
       {/* Weekly recap entry — win-only (ADR-0001). Shows only when there's
           something to celebrate; a quiet week is never scored, shamed, or shown
