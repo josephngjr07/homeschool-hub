@@ -61,10 +61,10 @@ export function PlanTaskRow({
             <input type="hidden" name="id" value={task.id} />
             <button
               type="submit"
-              title="Move to today"
-              className="text-xs font-medium text-accent-strong hover:underline"
+              title="Move this missed task to today"
+              className="shrink-0 whitespace-nowrap text-xs font-medium text-accent-strong hover:underline"
             >
-              Rescue
+              → Today
             </button>
           </form>
         )}

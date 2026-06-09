@@ -18,6 +18,31 @@ export function ChildChip({
   color: string;
 }) {
   const [editing, setEditing] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+
+  if (confirming) {
+    return (
+      <span className="inline-flex items-center gap-2 rounded-full border border-red-700/30 bg-card px-3 py-1.5 text-sm">
+        <span className="text-foreground">Delete {name}?</span>
+        <form action={deleteChildAction} className="flex">
+          <input type="hidden" name="id" value={id} readOnly />
+          <button
+            type="submit"
+            className="text-xs font-semibold text-red-700 hover:underline"
+          >
+            Delete
+          </button>
+        </form>
+        <button
+          type="button"
+          onClick={() => setConfirming(false)}
+          className="text-xs text-muted hover:text-foreground"
+        >
+          Cancel
+        </button>
+      </span>
+    );
+  }
 
   if (editing) {
     return (
@@ -71,16 +96,14 @@ export function ChildChip({
       >
         ✎
       </button>
-      <form action={deleteChildAction} className="flex">
-        <input type="hidden" name="id" value={id} readOnly />
-        <button
-          type="submit"
-          aria-label={`Delete ${name}`}
-          className="text-muted hover:text-foreground"
-        >
-          ✕
-        </button>
-      </form>
+      <button
+        type="button"
+        onClick={() => setConfirming(true)}
+        aria-label={`Delete ${name}`}
+        className="text-muted hover:text-foreground"
+      >
+        ✕
+      </button>
     </span>
   );
 }
