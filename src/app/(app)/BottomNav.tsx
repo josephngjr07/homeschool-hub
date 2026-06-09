@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 const TABS = [
   { href: "/dashboard", label: "Home", icon: HomeIcon },
   { href: "/today", label: "Today", icon: SunIcon },
+  { href: "/plan", label: "Plan", icon: CalendarIcon },
   { href: "/children", label: "Children", icon: PeopleIcon },
 ];
 
@@ -66,6 +67,28 @@ function SunIcon({ active }: { active: boolean }) {
       />
       <path
         d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"
+        stroke="currentColor"
+        strokeWidth={active ? 2 : 1.6}
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function CalendarIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect
+        x="3.5"
+        y="4.5"
+        width="17"
+        height="16"
+        rx="2.5"
+        stroke="currentColor"
+        strokeWidth={active ? 2 : 1.6}
+      />
+      <path
+        d="M3.5 9h17M8 3v3M16 3v3"
         stroke="currentColor"
         strokeWidth={active ? 2 : 1.6}
         strokeLinecap="round"

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
 import { listChildren } from "@/data/children";
 import { getTasksForDate } from "@/data/tasks";
-import { todayUTC, formatLongDate } from "@/lib/date";
+import { todayInZone, formatLongDate } from "@/lib/date";
 
 function greeting(): string {
   const hour = new Date().getUTCHours();
@@ -19,7 +19,7 @@ export default async function DashboardPage() {
   const userId = session?.user?.id;
   if (!userId) redirect("/");
 
-  const today = todayUTC();
+  const today = todayInZone();
   const [children, tasks] = await Promise.all([
     listChildren(userId),
     getTasksForDate(userId, today),

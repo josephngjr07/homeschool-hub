@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getUserId } from "@/lib/session";
 import { listChildren } from "@/data/children";
 import { getTasksForDate } from "@/data/tasks";
-import { todayUTC, toDateInputValue, formatLongDate } from "@/lib/date";
+import { todayInZone, toDateInputValue, formatLongDate } from "@/lib/date";
 import { AddTaskForm } from "./AddTaskForm";
 import { TaskItem } from "./TaskItem";
 
@@ -19,7 +19,7 @@ export default async function TodayPage({
   if (!userId) redirect("/");
 
   const { child: childFilter } = await searchParams;
-  const today = todayUTC();
+  const today = todayInZone();
 
   const [children, tasks] = await Promise.all([
     listChildren(userId),
