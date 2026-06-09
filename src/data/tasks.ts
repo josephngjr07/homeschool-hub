@@ -10,6 +10,7 @@ import { addDays } from "@/lib/date";
 type CreateTaskInput = {
   title: string;
   description?: string | null;
+  url?: string | null;
   date: Date;
   childIds?: string[];
   // Link back to the Inbox Resource this Task was planned from (S6). Only
@@ -45,6 +46,7 @@ export async function createTask(userId: string, input: CreateTaskInput) {
       userId,
       title: input.title,
       description: input.description ?? null,
+      url: input.url ?? null,
       date: input.date,
       resourceId,
       children: { connect: owned.map((c) => ({ id: c.id })) },
@@ -82,7 +84,8 @@ export function getTasksInRange(
       date: { gte: start, lte: end },
       ...(childId ? { children: { some: { id: childId } } } : {}),
     },
-    include: { children: true },
+    // Include the linked Resource so the plan can offer to open a task's link.
+    include: { children: true, resource: true },
     orderBy: [{ date: "asc" }, { createdAt: "asc" }],
   });
 }
@@ -97,6 +100,7 @@ export async function updateTask(
   data: {
     title?: string;
     description?: string | null;
+    url?: string | null;
     date?: Date;
     childIds?: string[];
   },
@@ -124,6 +128,7 @@ export async function updateTask(
       ...(data.description !== undefined
         ? { description: data.description }
         : {}),
+      ...(data.url !== undefined ? { url: data.url } : {}),
       ...(data.date !== undefined ? { date: data.date } : {}),
       ...(children ? { children } : {}),
     },
@@ -147,6 +152,7 @@ export async function createTasksForWeekdays(
   input: {
     title: string;
     description?: string | null;
+    url?: string | null;
     weekStart: Date;
     weekdays: number[];
     childIds?: string[];
@@ -158,6 +164,7 @@ export async function createTasksForWeekdays(
       await createTask(userId, {
         title: input.title,
         description: input.description ?? null,
+        url: input.url ?? null,
         date: addDays(input.weekStart, offset),
         childIds: input.childIds,
       }),
@@ -187,6 +194,7 @@ export async function copyWeek(
     await createTask(userId, {
       title: task.title,
       description: task.description,
+      url: task.url,
       date: addDays(task.date, offsetDays),
       childIds: task.children.map((c) => c.id),
     });

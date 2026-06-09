@@ -53,6 +53,16 @@ export function AddTaskForm({
         placeholder="Notes (optional)"
         className="mt-2 w-full bg-transparent text-xs text-foreground outline-none placeholder:text-muted/70"
       />
+      <input
+        name="url"
+        inputMode="url"
+        maxLength={2000}
+        placeholder="Link (optional)"
+        autoComplete="off"
+        autoCorrect="off"
+        spellCheck={false}
+        className="mt-2 w-full bg-transparent text-xs text-foreground outline-none placeholder:text-muted/70"
+      />
 
       {childOptions.length > 0 && (
         <div className="mt-3 flex flex-wrap items-center gap-1.5">

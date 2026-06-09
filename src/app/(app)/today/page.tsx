@@ -66,7 +66,7 @@ export default async function TodayPage({
               description={t.description}
               completed={t.completed}
               assignedTo={t.children}
-              resourceUrl={t.resource?.url ?? null}
+              linkUrl={t.url ?? t.resource?.url ?? null}
             />
           ))
         )}

@@ -10,6 +10,7 @@ export async function createTaskAction(formData: FormData) {
   const userId = await requireUserId();
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
+  const url = String(formData.get("url") ?? "").trim();
   const dateStr = String(formData.get("date") ?? "");
   const childIds = formData
     .getAll("childIds")
@@ -21,6 +22,7 @@ export async function createTaskAction(formData: FormData) {
   await createTask(userId, {
     title,
     description: description || null,
+    url: url || null,
     date: new Date(dateStr),
     childIds,
   });

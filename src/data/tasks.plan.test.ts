@@ -98,6 +98,23 @@ describe("weekly plan data access (S4)", () => {
     expect(rescued?.completed).toBe(false);
   });
 
+  it("createTask and updateTask persist an optional link (url)", async () => {
+    const userId = await makeUser();
+    const t = await createTask(userId, {
+      title: "video",
+      date: D("2026-06-09"),
+      url: "https://youtu.be/abc",
+    });
+    expect(t.url).toBe("https://youtu.be/abc");
+
+    const updated = await updateTask(userId, t.id, { url: "https://other.com" });
+    expect(updated?.url).toBe("https://other.com");
+
+    // Clearing the link is supported (null).
+    const cleared = await updateTask(userId, t.id, { url: null });
+    expect(cleared?.url).toBeNull();
+  });
+
   it("cannot update or delete another parent's task", async () => {
     const alice = await makeUser();
     const bob = await makeUser();
