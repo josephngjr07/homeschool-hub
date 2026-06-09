@@ -64,6 +64,7 @@ export async function planResourceAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
+  const time = String(formData.get("time") ?? "").trim();
   const weekStartStr = String(formData.get("weekStart") ?? "");
   const weekdays = formData
     .getAll("weekdays")
@@ -76,6 +77,7 @@ export async function planResourceAction(formData: FormData) {
   await planResource(userId, id, {
     title,
     description: description || null,
+    time: time || null,
     weekStart: new Date(weekStartStr),
     weekdays,
     childIds,

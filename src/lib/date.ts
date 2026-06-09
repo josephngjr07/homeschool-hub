@@ -62,6 +62,17 @@ export function formatLongDate(d: Date): string {
   });
 }
 
+// Format an "HH:MM" 24h time string as a friendly 12h label, e.g. "9:00 AM".
+// Returns null for empty/invalid input so callers can simply skip rendering.
+export function formatTime(time: string | null | undefined): string | null {
+  if (!time) return null;
+  const [h, m] = time.split(":").map(Number);
+  if (!Number.isInteger(h) || !Number.isInteger(m)) return null;
+  const period = h < 12 ? "AM" : "PM";
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return `${hour12}:${String(m).padStart(2, "0")} ${period}`;
+}
+
 export function formatShortDate(d: Date): string {
   return d.toLocaleDateString("en-US", {
     weekday: "short",

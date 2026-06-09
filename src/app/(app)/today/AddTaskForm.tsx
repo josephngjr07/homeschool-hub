@@ -101,13 +101,21 @@ export function AddTaskForm({
       )}
 
       <div className="mt-3 flex items-center justify-between gap-2">
-        <input
-          type="date"
-          name="date"
-          defaultValue={today}
-          aria-label="Task date"
-          className="rounded-lg border border-border bg-transparent px-2 py-1 text-xs text-muted"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            name="date"
+            defaultValue={today}
+            aria-label="Task date"
+            className="rounded-lg border border-border bg-transparent px-2 py-1 text-xs text-muted"
+          />
+          <input
+            type="time"
+            name="time"
+            aria-label="Time (optional)"
+            className="rounded-lg border border-border bg-transparent px-2 py-1 text-xs text-muted"
+          />
+        </div>
         <button
           type="submit"
           className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"

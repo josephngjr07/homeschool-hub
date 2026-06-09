@@ -126,6 +126,12 @@ export function ResourceRow({
           maxLength={120}
           className="w-full bg-transparent text-sm font-medium text-foreground outline-none"
         />
+        <input
+          type="time"
+          name="time"
+          aria-label="Time (optional)"
+          className="rounded-lg border border-border bg-transparent px-2 py-1 text-xs text-muted"
+        />
 
         <div className="flex flex-wrap gap-1.5">
           {DAY_LABELS.map((label, i) => {

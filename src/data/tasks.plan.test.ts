@@ -115,6 +115,25 @@ describe("weekly plan data access (S4)", () => {
     expect(cleared?.url).toBeNull();
   });
 
+  it("orders a day's tasks by time, with untimed ('anytime') last", async () => {
+    const userId = await makeUser();
+    await createTask(userId, {
+      title: "afternoon",
+      date: D("2026-06-09"),
+      time: "14:00",
+    });
+    await createTask(userId, { title: "anytime", date: D("2026-06-09") });
+    await createTask(userId, {
+      title: "morning",
+      date: D("2026-06-09"),
+      time: "09:00",
+    });
+
+    const day = await getTasksInRange(userId, D("2026-06-09"), D("2026-06-09"));
+
+    expect(day.map((t) => t.title)).toEqual(["morning", "afternoon", "anytime"]);
+  });
+
   it("cannot update or delete another parent's task", async () => {
     const alice = await makeUser();
     const bob = await makeUser();

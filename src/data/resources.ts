@@ -82,6 +82,7 @@ export async function planResource(
   input: {
     title: string;
     description?: string | null;
+    time?: string | null;
     weekStart: Date;
     weekdays: number[];
     childIds?: string[];
@@ -99,6 +100,7 @@ export async function planResource(
       await createTask(userId, {
         title: input.title,
         description: input.description ?? null,
+        time: input.time ?? null,
         date: addDays(input.weekStart, offset),
         childIds: input.childIds,
         resourceId,
