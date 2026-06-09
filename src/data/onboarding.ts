@@ -9,23 +9,27 @@ import { todayInZone, startOfWeek, addDays } from "@/lib/date";
 // editable and clearable, so it becomes the parent's own. No template entity,
 // no recurrence rule (CONTEXT.md).
 
-// A short, gentle menu of common homeschool subjects to seed from. The parent
-// picks a few; each becomes a daily Task for the school week.
+// A gentle menu of common homeschool subjects to seed from, each with a plain
+// example so a brand-new parent knows what it means. She picks which days each
+// one happens — nothing is forced across the whole week. She can also add her
+// own subjects beyond this list.
 export const STARTER_SUBJECTS = [
-  "Bible",
-  "Reading",
-  "Math",
-  "Writing",
-  "Science",
-  "History",
-  "Art",
-  "Music",
-  "Nature walk",
-  "Read-aloud",
+  { name: "Bible reading", hint: "a story + a verse" },
+  { name: "Reading", hint: "phonics or a book" },
+  { name: "Math", hint: "counting & numbers" },
+  { name: "Handwriting", hint: "letters & words" },
+  { name: "Read-aloud", hint: "you read, they listen" },
+  { name: "Science", hint: "an experiment or nature" },
+  { name: "History", hint: "a story from the past" },
+  { name: "Art & craft", hint: "draw, paint, make" },
+  { name: "Music", hint: "sing or an instrument" },
+  { name: "Nature walk", hint: "outside together" },
 ] as const;
 
-// How many weekdays the Starter week fills: Monday–Friday (offsets 0–4).
-const SCHOOL_DAYS = [0, 1, 2, 3, 4];
+// The day Bible reading is pre-lit on by default (Mon–Fri), so onboarding is
+// never a blank page but never floods the week either.
+export const DEFAULT_SUBJECT = "Bible reading";
+export const WEEKDAYS = [0, 1, 2, 3, 4];
 
 // Has this parent finished setup? Drives the redirect into Onboarding. A parent
 // is "onboarded" once they've completed setup (onboardedAt) — or if they
@@ -43,19 +47,24 @@ export async function hasOnboarded(userId: string): Promise<boolean> {
   return Boolean(user?.onboardedAt) || childCount > 0 || taskCount > 0;
 }
 
-// The testable core: given chosen subjects + the parent's children, insert one
-// independent Task per subject per school day, assigned to everyone (all the
-// given children). Returns the created Tasks.
+// One subject and the weekdays it happens on (0=Mon … 6=Sun). Each (subject,
+// day) pair becomes one independent Task — so "Bible every weekday, Art twice"
+// is just different-length day lists, never a flood across the whole week.
+export type StarterItem = { subject: string; weekdays: number[] };
+
+// The testable core: given the parent's chosen subjects-with-days + her
+// children, insert one independent Task per (subject, day), assigned to everyone
+// (all the given children). Returns the created Tasks.
 export async function generateStarterWeek(
   userId: string,
-  input: { subjects: string[]; weekStart: Date; childIds: string[] },
+  input: { items: StarterItem[]; weekStart: Date; childIds: string[] },
 ) {
   const created = [];
-  for (const subject of input.subjects) {
-    for (const offset of SCHOOL_DAYS) {
+  for (const item of input.items) {
+    for (const offset of item.weekdays) {
       created.push(
         await createTask(userId, {
-          title: subject,
+          title: item.subject,
           date: addDays(input.weekStart, offset),
           childIds: input.childIds,
         }),
@@ -72,7 +81,7 @@ export async function completeOnboarding(
   userId: string,
   input: {
     children: { name: string; color: string }[];
-    subjects: string[];
+    items: StarterItem[];
   },
 ) {
   if (await hasOnboarded(userId)) return null;
@@ -84,7 +93,7 @@ export async function completeOnboarding(
 
   const weekStart = startOfWeek(todayInZone());
   const tasks = await generateStarterWeek(userId, {
-    subjects: input.subjects,
+    items: input.items,
     weekStart,
     childIds: children.map((c) => c.id),
   });
