@@ -51,6 +51,16 @@ export function PlanAddForm({
         placeholder="Add a task to the week…"
         className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted"
       />
+      <input
+        name="url"
+        inputMode="url"
+        maxLength={2000}
+        placeholder="Link (optional)"
+        autoComplete="off"
+        autoCorrect="off"
+        spellCheck={false}
+        className="mt-2 w-full bg-transparent text-xs text-foreground outline-none placeholder:text-muted/70"
+      />
 
       <div className="mt-3 flex flex-wrap gap-1.5">
         {DAY_LABELS.map((label, i) => {

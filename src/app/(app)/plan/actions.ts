@@ -25,12 +25,14 @@ export async function updateTaskAction(formData: FormData) {
 
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
+  const url = String(formData.get("url") ?? "").trim();
   const dateStr = String(formData.get("date") ?? "");
   const childIds = formData.getAll("childIds").map(String).filter(Boolean);
 
   await updateTask(userId, id, {
     ...(title ? { title } : {}),
     description: description || null,
+    url: url || null,
     ...(dateStr ? { date: new Date(dateStr) } : {}),
     childIds,
   });
@@ -58,6 +60,7 @@ export async function createTasksForWeekdaysAction(formData: FormData) {
   const userId = await requireUserId();
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
+  const url = String(formData.get("url") ?? "").trim();
   const weekStartStr = String(formData.get("weekStart") ?? "");
   const weekdays = formData
     .getAll("weekdays")
@@ -70,6 +73,7 @@ export async function createTasksForWeekdaysAction(formData: FormData) {
   await createTasksForWeekdays(userId, {
     title,
     description: description || null,
+    url: url || null,
     weekStart: new Date(weekStartStr),
     weekdays,
     childIds,

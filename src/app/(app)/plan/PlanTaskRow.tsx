@@ -8,6 +8,7 @@ type PlanTask = {
   id: string;
   title: string;
   description: string | null;
+  url: string | null;
   date: string; // YYYY-MM-DD
   completed: boolean;
   childIds: string[];
@@ -56,15 +57,26 @@ export function PlanTaskRow({
             />
           ))}
         </span>
+        {task.url && (
+          <a
+            href={task.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Open link"
+            className="shrink-0 text-xs font-medium text-accent-strong hover:underline"
+          >
+            ↗
+          </a>
+        )}
         {isPast && !task.completed && (
           <form action={rescueTaskAction} className="shrink-0">
             <input type="hidden" name="id" value={task.id} />
             <button
               type="submit"
               title="Move this missed task to today"
-              className="shrink-0 whitespace-nowrap text-xs font-medium text-accent-strong hover:underline"
+              className="shrink-0 whitespace-nowrap rounded-full border border-accent/40 px-2 py-0.5 text-xs font-medium text-accent-strong hover:bg-accent/10"
             >
-              → Today
+              Move to today
             </button>
           </form>
         )}
@@ -94,6 +106,17 @@ export function PlanTaskRow({
         defaultValue={task.description ?? ""}
         maxLength={200}
         placeholder="Notes (optional)"
+        className="w-full bg-transparent text-xs text-foreground outline-none placeholder:text-muted"
+      />
+      <input
+        name="url"
+        defaultValue={task.url ?? ""}
+        inputMode="url"
+        maxLength={2000}
+        placeholder="Link (optional)"
+        autoComplete="off"
+        autoCorrect="off"
+        spellCheck={false}
         className="w-full bg-transparent text-xs text-foreground outline-none placeholder:text-muted"
       />
 

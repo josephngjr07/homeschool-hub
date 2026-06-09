@@ -59,6 +59,10 @@ model Task {
   id          String   @id @default(cuid())
   title       String
   description String?
+  // An optional link for this activity, added directly when creating/editing
+  // a Task (independent of the Inbox). When a Task also came from a Resource,
+  // this direct url takes precedence for "open" actions.
+  url         String?
   date        DateTime @db.Date
   completed   Boolean  @default(false)
   createdAt   DateTime @default(now())
