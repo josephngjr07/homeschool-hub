@@ -25,6 +25,10 @@ export function AddChildForm() {
         required
         maxLength={40}
         placeholder="Child's name"
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="words"
+        spellCheck={false}
         className="rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted focus:border-accent"
       />
       <ColorPicker defaultValue={DEFAULT_CHILD_COLOR} />

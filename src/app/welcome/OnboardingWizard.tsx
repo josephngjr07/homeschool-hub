@@ -4,24 +4,27 @@ import { useMemo, useState } from "react";
 import { CHILD_COLORS, DEFAULT_CHILD_COLOR } from "@/lib/colors";
 import { completeOnboardingAction } from "./actions";
 
-type DraftChild = { name: string; color: string };
+type DraftChild = { id: string; name: string; color: string };
 type SubjectOption = { name: string; hint?: string };
 
 const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 const WEEKDAYS = [0, 1, 2, 3, 4];
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
 
+const newId = () =>
+  typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2);
+
 // The two-step setup. Step 1: add the kids. Step 2: build the week — pick which
-// days each subject happens on (a subject is only included if it has a day), so
-// the parent builds up a calm week instead of deleting down from a flood. She
-// can add her own subjects and see a live task count. Then a Server Action
-// seeds the Starter week. Deliberately two steps — no multi-screen flow.
+// days each subject happens on and who it's for. Nothing is pre-selected (the
+// parent chooses everything, with no nudge toward, say, daily Bible reading),
+// and a subject is only included if it has a day. Then a Server Action seeds the
+// Starter week. Deliberately two steps — no multi-screen flow.
 export function OnboardingWizard({
   subjects,
-  defaultSubject,
 }: {
   subjects: readonly SubjectOption[];
-  defaultSubject: string;
 }) {
   const [step, setStep] = useState<1 | 2>(1);
 
@@ -30,18 +33,17 @@ export function OnboardingWizard({
   const [name, setName] = useState("");
   const [color, setColor] = useState<string>(DEFAULT_CHILD_COLOR);
 
-  // Step 2 state: the subject rows (preset + any custom), and the days chosen
-  // per subject (keyed by name). Bible reading starts pre-lit on weekdays.
+  // Step 2 state: subject rows (preset + custom), the days chosen per subject,
+  // and who each subject is for (child ids; empty = everyone). All start blank.
   const [rows, setRows] = useState<SubjectOption[]>([...subjects]);
-  const [days, setDays] = useState<Record<string, number[]>>({
-    [defaultSubject]: WEEKDAYS,
-  });
+  const [days, setDays] = useState<Record<string, number[]>>({});
+  const [assign, setAssign] = useState<Record<string, string[]>>({});
   const [custom, setCustom] = useState("");
 
   function addChild() {
     const trimmed = name.trim();
     if (!trimmed) return;
-    setChildren((cs) => [...cs, { name: trimmed, color }]);
+    setChildren((cs) => [...cs, { id: newId(), name: trimmed, color }]);
     setName("");
     const next =
       CHILD_COLORS[
@@ -63,7 +65,6 @@ export function OnboardingWizard({
   function setRowDays(subject: string, preset: number[]) {
     setDays((d) => {
       const current = d[subject] ?? [];
-      // Tapping a preset toggles it: if it's already exactly that, clear it.
       const same =
         current.length === preset.length &&
         preset.every((x) => current.includes(x));
@@ -71,26 +72,46 @@ export function OnboardingWizard({
     });
   }
 
+  function setEveryone(subject: string) {
+    setAssign((a) => ({ ...a, [subject]: [] }));
+  }
+
+  function toggleChild(subject: string, childId: string) {
+    setAssign((a) => {
+      const current = a[subject] ?? [];
+      const next = current.includes(childId)
+        ? current.filter((x) => x !== childId)
+        : [...current, childId];
+      return { ...a, [subject]: next };
+    });
+  }
+
   function addCustom() {
     const trimmed = custom.trim().slice(0, 40);
     if (!trimmed) return;
-    // Skip duplicates (case-insensitive).
     if (rows.some((r) => r.name.toLowerCase() === trimmed.toLowerCase())) {
       setCustom("");
       return;
     }
     setRows((r) => [...r, { name: trimmed }]);
-    setDays((d) => ({ ...d, [trimmed]: WEEKDAYS }));
     setCustom("");
   }
 
-  // The submit payload + the live count: only subjects with at least one day.
+  // The submit payload + live count: only subjects with at least one day. Child
+  // ids are resolved to indexes into the current children array (empty =
+  // everyone), so removing a child can't mis-target a task.
   const items = useMemo(
     () =>
       rows
-        .map((r) => ({ subject: r.name, weekdays: days[r.name] ?? [] }))
+        .map((r) => {
+          const weekdays = days[r.name] ?? [];
+          const childIndexes = (assign[r.name] ?? [])
+            .map((id) => children.findIndex((c) => c.id === id))
+            .filter((i) => i >= 0);
+          return { subject: r.name, weekdays, childIndexes };
+        })
         .filter((it) => it.weekdays.length > 0),
-    [rows, days],
+    [rows, days, assign, children],
   );
   const taskCount = items.reduce((sum, it) => sum + it.weekdays.length, 0);
 
@@ -131,6 +152,10 @@ export function OnboardingWizard({
                 }}
                 maxLength={40}
                 placeholder="Child's name"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="words"
+                spellCheck={false}
                 className="flex-1 rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted focus:border-accent"
               />
               <span className="flex items-center gap-1.5">
@@ -164,9 +189,9 @@ export function OnboardingWizard({
 
           {children.length > 0 && (
             <ul className="flex flex-wrap gap-2">
-              {children.map((c, i) => (
+              {children.map((c) => (
                 <li
-                  key={i}
+                  key={c.id}
                   className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-sm font-medium"
                 >
                   <span
@@ -178,7 +203,7 @@ export function OnboardingWizard({
                     type="button"
                     aria-label={`Remove ${c.name}`}
                     onClick={() =>
-                      setChildren((cs) => cs.filter((_, j) => j !== i))
+                      setChildren((cs) => cs.filter((x) => x.id !== c.id))
                     }
                     className="text-muted hover:text-foreground"
                   >
@@ -200,9 +225,10 @@ export function OnboardingWizard({
         </section>
       ) : (
         <form action={completeOnboardingAction} className="mt-6 space-y-4">
-          {/* Carry the step-1 draft + the computed week along with the submit. */}
-          {children.map((c, i) => (
-            <span key={i}>
+          {/* Carry the step-1 draft + the computed week along with the submit.
+              Children render in order so the action's indexes line up. */}
+          {children.map((c) => (
+            <span key={c.id}>
               <input type="hidden" name="childName" value={c.name} />
               <input type="hidden" name="childColor" value={c.color} />
             </span>
@@ -210,13 +236,14 @@ export function OnboardingWizard({
           <input type="hidden" name="items" value={JSON.stringify(items)} />
 
           <p className="text-sm text-muted">
-            Tap the days you&apos;ll do each thing. Leave one blank to skip it —
-            you can change everything later.
+            Tap the days you&apos;ll do each thing, and who it&apos;s for. Leave
+            one blank to skip it — you can change everything later.
           </p>
 
           <div className="space-y-2">
             {rows.map((row) => {
               const chosen = days[row.name] ?? [];
+              const forChildren = assign[row.name] ?? [];
               const isWeekdays =
                 chosen.length === 5 && WEEKDAYS.every((x) => chosen.includes(x));
               const isDaily = chosen.length === 7;
@@ -285,6 +312,44 @@ export function OnboardingWizard({
                       );
                     })}
                   </div>
+
+                  {/* Who it's for — only meaningful with 2+ kids, and only once
+                      the subject is actually in the week. */}
+                  {chosen.length > 0 && children.length > 1 && (
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setEveryone(row.name)}
+                        className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition ${
+                          forChildren.length === 0
+                            ? "bg-foreground text-background"
+                            : "border border-border text-muted"
+                        }`}
+                      >
+                        Everyone
+                      </button>
+                      {children.map((c) => {
+                        const on = forChildren.includes(c.id);
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => toggleChild(row.name, c.id)}
+                            className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium transition ${
+                              on ? "text-white" : "border border-border text-muted"
+                            }`}
+                            style={on ? { backgroundColor: c.color } : undefined}
+                          >
+                            <span
+                              className="h-1.5 w-1.5 rounded-full"
+                              style={{ backgroundColor: on ? "white" : c.color }}
+                            />
+                            {c.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -302,6 +367,10 @@ export function OnboardingWizard({
               }}
               maxLength={40}
               placeholder="Add your own (piano, co-op…)"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
               className="flex-1 rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted focus:border-accent"
             />
             <button
