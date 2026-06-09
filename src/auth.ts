@@ -14,6 +14,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      // Always show Google's account chooser on sign-in. Without this, Google
+      // silently reuses the one account already logged into the browser, so
+      // after signing out there's no way to pick a different account.
+      authorization: { params: { prompt: "select_account" } },
     }),
   ],
   callbacks: {
