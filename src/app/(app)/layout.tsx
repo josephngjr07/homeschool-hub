@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 import { getUserId } from "@/lib/session";
+import { hasOnboarded } from "@/data/onboarding";
 import { BottomNav } from "./BottomNav";
 
-// Shell for every signed-in screen: guards auth once, centers a mobile-width
+// Shell for every signed-in screen: guards auth once, sends brand-new parents
+// through Onboarding so they never hit an empty planner, centers a mobile-width
 // column, and pins the bottom tab bar. Inner pages render into the padded area
 // above the nav.
 export default async function AppLayout({
@@ -12,6 +14,7 @@ export default async function AppLayout({
 }) {
   const userId = await getUserId();
   if (!userId) redirect("/");
+  if (!(await hasOnboarded(userId))) redirect("/welcome");
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col">

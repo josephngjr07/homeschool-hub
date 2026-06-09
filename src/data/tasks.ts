@@ -12,6 +12,9 @@ type CreateTaskInput = {
   description?: string | null;
   date: Date;
   childIds?: string[];
+  // Link back to the Inbox Resource this Task was planned from (S6). Only
+  // honoured if the Resource belongs to this parent.
+  resourceId?: string | null;
 };
 
 export async function createTask(userId: string, input: CreateTaskInput) {
@@ -26,12 +29,24 @@ export async function createTask(userId: string, input: CreateTaskInput) {
       })
     : [];
 
+  // Same distrust for the resource link: only connect a Resource the parent
+  // actually owns, otherwise leave the Task unlinked.
+  const resourceId = input.resourceId
+    ? (
+        await prisma.resource.findFirst({
+          where: { id: input.resourceId, userId },
+          select: { id: true },
+        })
+      )?.id ?? null
+    : null;
+
   return prisma.task.create({
     data: {
       userId,
       title: input.title,
       description: input.description ?? null,
       date: input.date,
+      resourceId,
       children: { connect: owned.map((c) => ({ id: c.id })) },
     },
     include: { children: true },
@@ -47,7 +62,8 @@ export function getTasksForDate(userId: string, date: Date, childId?: string) {
       date,
       ...(childId ? { children: { some: { id: childId } } } : {}),
     },
-    include: { children: true },
+    // Pull the linked Resource so Today can offer to open its source.
+    include: { children: true, resource: true },
     orderBy: { createdAt: "asc" },
   });
 }
@@ -176,6 +192,20 @@ export async function copyWeek(
     });
   }
   return source.length;
+}
+
+// --- Weekly recap (S8) ----------------------------------------------------
+// Win-only by construction: this counts ONLY completed Tasks in [start, end].
+// There is deliberately no companion "incomplete count" here — the recap can
+// only ever surface what got done, never what was missed (ADR-0001).
+export function countCompletedInRange(userId: string, start: Date, end: Date) {
+  return prisma.task.count({
+    where: {
+      userId,
+      completed: true,
+      date: { gte: start, lte: end },
+    },
+  });
 }
 
 // Set completion, only if the Task belongs to the parent. Returns the updated

@@ -2,8 +2,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
 import { listChildren } from "@/data/children";
-import { getTasksForDate } from "@/data/tasks";
-import { todayInZone, formatLongDate } from "@/lib/date";
+import { getTasksForDate, countCompletedInRange } from "@/data/tasks";
+import {
+  todayInZone,
+  formatLongDate,
+  startOfWeek,
+  addDays,
+} from "@/lib/date";
 
 function greeting(): string {
   const hour = new Date().getUTCHours();
@@ -20,9 +25,11 @@ export default async function DashboardPage() {
   if (!userId) redirect("/");
 
   const today = todayInZone();
-  const [children, tasks] = await Promise.all([
+  const weekStart = startOfWeek(today);
+  const [children, tasks, weekWins] = await Promise.all([
     listChildren(userId),
     getTasksForDate(userId, today),
+    countCompletedInRange(userId, weekStart, addDays(weekStart, 6)),
   ]);
   const doneCount = tasks.filter((t) => t.completed).length;
   const firstName = session.user?.name?.split(" ")[0] ?? "there";
@@ -35,6 +42,18 @@ export default async function DashboardPage() {
           {greeting()}, {firstName}
         </h1>
       </header>
+
+      {/* Weekly recap — win-only (ADR-0001). Shows only when there's something
+          to celebrate; a quiet week is never scored, shamed, or shown as 0. */}
+      {weekWins > 0 && (
+        <p className="mt-6 rounded-3xl border border-accent/30 bg-accent/10 px-5 py-4 text-sm text-foreground">
+          You did{" "}
+          <span className="font-semibold text-accent-strong">
+            {weekWins} {weekWins === 1 ? "thing" : "things"}
+          </span>{" "}
+          with the kids this week 💛
+        </p>
+      )}
 
       <Link
         href="/today"
