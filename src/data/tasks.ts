@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { addDays } from "@/lib/date";
 
 // Data-access for Tasks. Owner-scoped throughout. "Everyone" isn't a special
 // flag — the caller links the Task to all of the parent's children, so a
@@ -49,6 +50,132 @@ export function getTasksForDate(userId: string, date: Date, childId?: string) {
     include: { children: true },
     orderBy: { createdAt: "asc" },
   });
+}
+
+// Tasks across a date range [start, end] inclusive — the weekly plan view.
+// Optionally filtered to one child. Ordered by day, then creation.
+export function getTasksInRange(
+  userId: string,
+  start: Date,
+  end: Date,
+  childId?: string,
+) {
+  return prisma.task.findMany({
+    where: {
+      userId,
+      date: { gte: start, lte: end },
+      ...(childId ? { children: { some: { id: childId } } } : {}),
+    },
+    include: { children: true },
+    orderBy: [{ date: "asc" }, { createdAt: "asc" }],
+  });
+}
+
+// Edit a Task: change its title/description, move it to another day (date),
+// and/or reassign its children — only if it belongs to the parent. "Rescue"
+// (moving a missed task to today) is just a date update. Returns the updated
+// Task, or null if it wasn't theirs.
+export async function updateTask(
+  userId: string,
+  id: string,
+  data: {
+    title?: string;
+    description?: string | null;
+    date?: Date;
+    childIds?: string[];
+  },
+) {
+  const owns = await prisma.task.findFirst({
+    where: { id, userId },
+    select: { id: true },
+  });
+  if (!owns) return null;
+
+  // If reassigning, keep only children this parent owns.
+  let children;
+  if (data.childIds) {
+    const owned = await prisma.child.findMany({
+      where: { userId, id: { in: data.childIds } },
+      select: { id: true },
+    });
+    children = { set: owned.map((c) => ({ id: c.id })) };
+  }
+
+  return prisma.task.update({
+    where: { id },
+    data: {
+      ...(data.title !== undefined ? { title: data.title } : {}),
+      ...(data.description !== undefined
+        ? { description: data.description }
+        : {}),
+      ...(data.date !== undefined ? { date: data.date } : {}),
+      ...(children ? { children } : {}),
+    },
+    include: { children: true },
+  });
+}
+
+// Delete a Task, only if owned. Returns true if a row was removed.
+export async function deleteTask(userId: string, id: string) {
+  const { count } = await prisma.task.deleteMany({ where: { id, userId } });
+  return count > 0;
+}
+
+// --- Recurrence (S5) ------------------------------------------------------
+// Repeats are many INDEPENDENT Tasks, never a recurrence rule (per CONTEXT.md),
+// so these just fan out createTask. weekdays index: 0=Mon … 6=Sun, matching the
+// order of weekDates(weekStart).
+
+export async function createTasksForWeekdays(
+  userId: string,
+  input: {
+    title: string;
+    description?: string | null;
+    weekStart: Date;
+    weekdays: number[];
+    childIds?: string[];
+  },
+) {
+  const created = [];
+  for (const offset of input.weekdays) {
+    created.push(
+      await createTask(userId, {
+        title: input.title,
+        description: input.description ?? null,
+        date: addDays(input.weekStart, offset),
+        childIds: input.childIds,
+      }),
+    );
+  }
+  return created;
+}
+
+// Duplicate every Task from the week starting fromWeekStart into the week
+// starting toWeekStart, preserving weekday + child assignment and resetting
+// completion. Returns how many tasks were copied.
+export async function copyWeek(
+  userId: string,
+  fromWeekStart: Date,
+  toWeekStart: Date,
+) {
+  const source = await getTasksInRange(
+    userId,
+    fromWeekStart,
+    addDays(fromWeekStart, 6),
+  );
+  const offsetDays = Math.round(
+    (toWeekStart.getTime() - fromWeekStart.getTime()) / 86_400_000,
+  );
+
+  for (const task of source) {
+    await createTask(userId, {
+      title: task.title,
+      description: task.description,
+      date: addDays(task.date, offsetDays),
+      childIds: task.children.map((c) => c.id),
+    });
+  }
+  return source.length;
 }
 
 // Set completion, only if the Task belongs to the parent. Returns the updated
