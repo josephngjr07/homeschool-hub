@@ -21,11 +21,18 @@ describe("onboarding → starter week (S7)", () => {
 
     const tasks = await generateStarterWeek(userId, {
       items: [
-        { subject: "Bible reading", weekdays: [0, 1, 2, 3, 4] }, // Mon–Fri
-        { subject: "Art & craft", weekdays: [1, 3] }, // Tue + Thu only
+        {
+          subject: "Bible reading",
+          weekdays: [0, 1, 2, 3, 4], // Mon–Fri
+          childIds: [mia.id, theo.id],
+        },
+        {
+          subject: "Art & craft",
+          weekdays: [1, 3], // Tue + Thu only
+          childIds: [mia.id, theo.id],
+        },
       ],
       weekStart: D("2026-06-08"), // a Monday
-      childIds: [mia.id, theo.id],
     });
 
     // 5 Bible + 2 Art = 7 tasks, not a flood.
@@ -48,10 +55,31 @@ describe("onboarding → starter week (S7)", () => {
 
     await completeOnboarding(userId, {
       children: [{ name: "Mia", color: "#ef4444" }],
-      items: [{ subject: "Reading", weekdays: [0, 1, 2, 3, 4] }],
+      items: [{ subject: "Reading", weekdays: [0, 1, 2, 3, 4], childIndexes: [] }],
     });
 
     expect(await hasOnboarded(userId)).toBe(true);
+  });
+
+  it("completeOnboarding resolves per-subject child assignment (empty = everyone)", async () => {
+    const userId = await makeUser();
+
+    const result = await completeOnboarding(userId, {
+      children: [
+        { name: "Mia", color: "#ef4444" }, // index 0
+        { name: "Theo", color: "#3b82f6" }, // index 1
+      ],
+      items: [
+        { subject: "Bible reading", weekdays: [0], childIndexes: [] }, // everyone
+        { subject: "Piano", weekdays: [0], childIndexes: [1] }, // Theo only
+      ],
+    });
+
+    const bible = result!.tasks.find((t) => t.title === "Bible reading");
+    const piano = result!.tasks.find((t) => t.title === "Piano");
+
+    expect(bible!.children.map((c) => c.name).sort()).toEqual(["Mia", "Theo"]);
+    expect(piano!.children.map((c) => c.name)).toEqual(["Theo"]);
   });
 
   it("completeOnboarding seeds children + a filled current week, then stamps onboardedAt", async () => {
@@ -63,9 +91,9 @@ describe("onboarding → starter week (S7)", () => {
         { name: "Theo", color: "#3b82f6" },
       ],
       items: [
-        { subject: "Bible reading", weekdays: [0, 1, 2, 3, 4] }, // 5
-        { subject: "Math", weekdays: [0, 2, 4] }, // 3
-        { subject: "Nature walk", weekdays: [5] }, // 1 (Saturday)
+        { subject: "Bible reading", weekdays: [0, 1, 2, 3, 4], childIndexes: [] }, // 5
+        { subject: "Math", weekdays: [0, 2, 4], childIndexes: [] }, // 3
+        { subject: "Nature walk", weekdays: [5], childIndexes: [] }, // 1 (Sat)
       ],
     });
 
@@ -88,7 +116,7 @@ describe("onboarding → starter week (S7)", () => {
 
     await completeOnboarding(userId, {
       children: [{ name: "Mia", color: "#ef4444" }],
-      items: [{ subject: "Reading", weekdays: [0, 1, 2, 3, 4] }],
+      items: [{ subject: "Reading", weekdays: [0, 1, 2, 3, 4], childIndexes: [] }],
     });
 
     // Simulate the parent clearing their Starter week.
@@ -96,7 +124,7 @@ describe("onboarding → starter week (S7)", () => {
 
     const second = await completeOnboarding(userId, {
       children: [{ name: "Duplicate", color: "#22c55e" }],
-      items: [{ subject: "Math", weekdays: [0, 1, 2, 3, 4] }],
+      items: [{ subject: "Math", weekdays: [0, 1, 2, 3, 4], childIndexes: [] }],
     });
 
     expect(second).toBeNull();

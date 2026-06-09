@@ -11,8 +11,8 @@ import { todayInZone, startOfWeek, addDays } from "@/lib/date";
 
 // A gentle menu of common homeschool subjects to seed from, each with a plain
 // example so a brand-new parent knows what it means. She picks which days each
-// one happens — nothing is forced across the whole week. She can also add her
-// own subjects beyond this list.
+// one happens and who it's for — nothing is pre-selected and nothing is forced
+// across the whole week. She can also add her own subjects beyond this list.
 export const STARTER_SUBJECTS = [
   { name: "Bible reading", hint: "a story + a verse" },
   { name: "Reading", hint: "phonics or a book" },
@@ -25,11 +25,6 @@ export const STARTER_SUBJECTS = [
   { name: "Music", hint: "sing or an instrument" },
   { name: "Nature walk", hint: "outside together" },
 ] as const;
-
-// The day Bible reading is pre-lit on by default (Mon–Fri), so onboarding is
-// never a blank page but never floods the week either.
-export const DEFAULT_SUBJECT = "Bible reading";
-export const WEEKDAYS = [0, 1, 2, 3, 4];
 
 // Has this parent finished setup? Drives the redirect into Onboarding. A parent
 // is "onboarded" once they've completed setup (onboardedAt) — or if they
@@ -47,17 +42,21 @@ export async function hasOnboarded(userId: string): Promise<boolean> {
   return Boolean(user?.onboardedAt) || childCount > 0 || taskCount > 0;
 }
 
-// One subject and the weekdays it happens on (0=Mon … 6=Sun). Each (subject,
-// day) pair becomes one independent Task — so "Bible every weekday, Art twice"
-// is just different-length day lists, never a flood across the whole week.
-export type StarterItem = { subject: string; weekdays: number[] };
+// One subject, the weekdays it happens on (0=Mon … 6=Sun), and the resolved
+// child ids it's for. Each (subject, day) pair becomes one independent Task — so
+// "Bible every weekday, Art twice" is just different-length day lists, never a
+// flood across the whole week.
+export type StarterItem = {
+  subject: string;
+  weekdays: number[];
+  childIds: string[];
+};
 
-// The testable core: given the parent's chosen subjects-with-days + her
-// children, insert one independent Task per (subject, day), assigned to everyone
-// (all the given children). Returns the created Tasks.
+// The testable core: insert one independent Task per (subject, day), assigned to
+// that item's children. Returns the created Tasks.
 export async function generateStarterWeek(
   userId: string,
-  input: { items: StarterItem[]; weekStart: Date; childIds: string[] },
+  input: { items: StarterItem[]; weekStart: Date },
 ) {
   const created = [];
   for (const item of input.items) {
@@ -66,7 +65,7 @@ export async function generateStarterWeek(
         await createTask(userId, {
           title: item.subject,
           date: addDays(input.weekStart, offset),
-          childIds: input.childIds,
+          childIds: item.childIds,
         }),
       );
     }
@@ -74,29 +73,48 @@ export async function generateStarterWeek(
   return created;
 }
 
-// The orchestration the wizard calls: create the children, seed this week's
-// Starter week assigned to all of them, and stamp onboardedAt so setup never
-// runs again. Idempotent-ish: if already onboarded, do nothing.
+// One subject as it comes from the wizard: its days plus which children it's
+// for, expressed as indexes into the children array (empty = everyone, so it
+// stays "everyone" even before the children have ids).
+export type DraftItem = {
+  subject: string;
+  weekdays: number[];
+  childIndexes: number[];
+};
+
+// The orchestration the wizard calls: create the children, resolve each item's
+// child indexes to real ids (empty = all children), seed this week's Starter
+// week, and stamp onboardedAt so setup never runs again. Idempotent-ish: if
+// already onboarded, do nothing.
 export async function completeOnboarding(
   userId: string,
   input: {
     children: { name: string; color: string }[];
-    items: StarterItem[];
+    items: DraftItem[];
   },
 ) {
   if (await hasOnboarded(userId)) return null;
 
-  const children = [];
+  const children: Awaited<ReturnType<typeof createChild>>[] = [];
   for (const c of input.children) {
     children.push(await createChild(userId, c));
   }
+  const allIds = children.map((c) => c.id);
+
+  // Empty selection means "everyone"; otherwise map the chosen indexes to ids,
+  // ignoring any out-of-range index.
+  const items: StarterItem[] = input.items.map((it) => ({
+    subject: it.subject,
+    weekdays: it.weekdays,
+    childIds: it.childIndexes.length
+      ? it.childIndexes
+          .filter((i) => i >= 0 && i < children.length)
+          .map((i) => children[i].id)
+      : allIds,
+  }));
 
   const weekStart = startOfWeek(todayInZone());
-  const tasks = await generateStarterWeek(userId, {
-    items: input.items,
-    weekStart,
-    childIds: children.map((c) => c.id),
-  });
+  const tasks = await generateStarterWeek(userId, { items, weekStart });
 
   await prisma.user.update({
     where: { id: userId },
