@@ -33,6 +33,10 @@ export default async function DashboardPage() {
   ]);
   const doneCount = tasks.filter((t) => t.completed).length;
   const firstName = session.user?.name?.split(" ")[0] ?? "there";
+  // Fri/Sat/Sun: nudge the week's wrap-up a little more warmly (UTC-midnight
+  // day, so getUTCDay is the family's local weekday). 0=Sun, 5=Fri, 6=Sat.
+  const dow = today.getUTCDay();
+  const weekClosing = dow === 5 || dow === 6 || dow === 0;
 
   return (
     <main className="px-5 py-8">
@@ -43,16 +47,30 @@ export default async function DashboardPage() {
         </h1>
       </header>
 
-      {/* Weekly recap — win-only (ADR-0001). Shows only when there's something
-          to celebrate; a quiet week is never scored, shamed, or shown as 0. */}
+      {/* Weekly recap entry — win-only (ADR-0001). Shows only when there's
+          something to celebrate; a quiet week is never scored, shamed, or shown
+          as 0. Leads into the full recap; warms up as the week closes. */}
       {weekWins > 0 && (
-        <p className="mt-6 rounded-3xl border border-accent/30 bg-accent/10 px-5 py-4 text-sm text-foreground">
-          You did{" "}
-          <span className="font-semibold text-accent-strong">
-            {weekWins} {weekWins === 1 ? "thing" : "things"}
-          </span>{" "}
-          with the kids this week 💛
-        </p>
+        <Link
+          href="/recap"
+          className="mt-6 block rounded-3xl border border-accent/30 bg-accent/10 px-5 py-4 transition hover:border-accent"
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-foreground">
+              {weekClosing ? "🎉 " : ""}You did{" "}
+              <span className="font-semibold text-accent-strong">
+                {weekWins} {weekWins === 1 ? "thing" : "things"}
+              </span>{" "}
+              with the kids this week 💛
+            </p>
+            <span aria-hidden className="text-accent-strong">
+              →
+            </span>
+          </div>
+          <p className="mt-0.5 text-xs text-muted">
+            {weekClosing ? "See your week's recap" : "See the recap so far"}
+          </p>
+        </Link>
       )}
 
       <Link
