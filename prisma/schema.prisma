@@ -21,10 +21,15 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
+  // When the two-step setup was completed and the Starter week seeded. Null =
+  // brand-new: send them through Onboarding so they never face an empty
+  // planner (S7). Clearing the Starter week later doesn't re-trigger setup.
+  onboardedAt   DateTime?
   accounts      Account[]
   sessions      Session[]
   children      Child[]
   tasks         Task[]
+  resources     Resource[]
 }
 
 // --- Domain models --------------------------------------------------------
@@ -62,7 +67,32 @@ model Task {
   user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   children Child[]
 
+  // The Inbox Resource this Task was planned from, if any — so the parent can
+  // open the source (e.g. a video) while doing it. Independent of the Task's
+  // life: deleting the Resource just clears the link (onDelete: SetNull).
+  resourceId String?
+  resource   Resource? @relation(fields: [resourceId], references: [id], onDelete: SetNull)
+
   @@index([userId, date])
+}
+
+// An Inbox item: a saved educational idea or link, captured forgivingly (a bare
+// url with no title/note is valid) so capturing mid-scroll is one step. A
+// Resource exists to serve the plan — once turned into a Task it is marked
+// `planned` and drains out of the Inbox. Always owner-scoped.
+model Resource {
+  id        String   @id @default(cuid())
+  url       String?
+  title     String?
+  note      String?
+  planned   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks  Task[]
+
+  @@index([userId])
 }
 
 model Account {

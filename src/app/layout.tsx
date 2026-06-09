@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Fraunces } from "next/font/google";
 import "./globals.css";
 
@@ -23,6 +23,16 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: "Homeschool Hub",
   description: "A calm weekly-rhythm planner for homeschooling parents.",
+};
+
+// Mobile-first (S8): viewport-fit=cover lets the bottom nav's
+// env(safe-area-inset-bottom) padding actually take effect on notched phones;
+// themeColor tints the browser chrome to match the warm cream canvas.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#f1efe6",
 };
 
 export default function RootLayout({

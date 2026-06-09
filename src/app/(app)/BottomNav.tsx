@@ -9,6 +9,7 @@ const TABS = [
   { href: "/dashboard", label: "Home", icon: HomeIcon },
   { href: "/today", label: "Today", icon: SunIcon },
   { href: "/plan", label: "Plan", icon: CalendarIcon },
+  { href: "/inbox", label: "Inbox", icon: InboxIcon },
   { href: "/children", label: "Children", icon: PeopleIcon },
 ];
 
@@ -92,6 +93,20 @@ function CalendarIcon({ active }: { active: boolean }) {
         stroke="currentColor"
         strokeWidth={active ? 2 : 1.6}
         strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function InboxIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M3.5 13 6 5.5h12L20.5 13M3.5 13v5.5h17V13M3.5 13h4l1.5 2.5h6L16.5 13h4"
+        stroke="currentColor"
+        strokeWidth={active ? 2 : 1.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
