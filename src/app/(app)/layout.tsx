@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getUserId } from "@/lib/session";
 import { hasOnboarded } from "@/data/onboarding";
 import { BottomNav } from "./BottomNav";
+import { SwipeTabs } from "./SwipeTabs";
 
 // Shell for every signed-in screen: guards auth once, sends brand-new parents
 // through Onboarding so they never hit an empty planner, centers a mobile-width
@@ -18,7 +19,7 @@ export default async function AppLayout({
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col">
-      <div className="flex-1 pb-24">{children}</div>
+      <SwipeTabs className="flex-1 pb-24">{children}</SwipeTabs>
       <BottomNav />
     </div>
   );
