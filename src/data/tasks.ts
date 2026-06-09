@@ -11,6 +11,7 @@ type CreateTaskInput = {
   title: string;
   description?: string | null;
   url?: string | null;
+  time?: string | null;
   date: Date;
   childIds?: string[];
   // Link back to the Inbox Resource this Task was planned from (S6). Only
@@ -47,6 +48,7 @@ export async function createTask(userId: string, input: CreateTaskInput) {
       title: input.title,
       description: input.description ?? null,
       url: input.url ?? null,
+      time: input.time ?? null,
       date: input.date,
       resourceId,
       children: { connect: owned.map((c) => ({ id: c.id })) },
@@ -66,7 +68,8 @@ export function getTasksForDate(userId: string, date: Date, childId?: string) {
     },
     // Pull the linked Resource so Today can offer to open its source.
     include: { children: true, resource: true },
-    orderBy: { createdAt: "asc" },
+    // Timed tasks first in clock order; untimed ("anytime") after, oldest first.
+    orderBy: [{ time: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
   });
 }
 
@@ -86,7 +89,11 @@ export function getTasksInRange(
     },
     // Include the linked Resource so the plan can offer to open a task's link.
     include: { children: true, resource: true },
-    orderBy: [{ date: "asc" }, { createdAt: "asc" }],
+    orderBy: [
+      { date: "asc" },
+      { time: { sort: "asc", nulls: "last" } },
+      { createdAt: "asc" },
+    ],
   });
 }
 
@@ -101,6 +108,7 @@ export async function updateTask(
     title?: string;
     description?: string | null;
     url?: string | null;
+    time?: string | null;
     date?: Date;
     childIds?: string[];
   },
@@ -129,6 +137,7 @@ export async function updateTask(
         ? { description: data.description }
         : {}),
       ...(data.url !== undefined ? { url: data.url } : {}),
+      ...(data.time !== undefined ? { time: data.time } : {}),
       ...(data.date !== undefined ? { date: data.date } : {}),
       ...(children ? { children } : {}),
     },
@@ -153,6 +162,7 @@ export async function createTasksForWeekdays(
     title: string;
     description?: string | null;
     url?: string | null;
+    time?: string | null;
     weekStart: Date;
     weekdays: number[];
     childIds?: string[];
@@ -165,6 +175,7 @@ export async function createTasksForWeekdays(
         title: input.title,
         description: input.description ?? null,
         url: input.url ?? null,
+        time: input.time ?? null,
         date: addDays(input.weekStart, offset),
         childIds: input.childIds,
       }),
@@ -195,6 +206,7 @@ export async function copyWeek(
       title: task.title,
       description: task.description,
       url: task.url,
+      time: task.time,
       date: addDays(task.date, offsetDays),
       childIds: task.children.map((c) => c.id),
     });

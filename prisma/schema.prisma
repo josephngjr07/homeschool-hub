@@ -63,6 +63,11 @@ model Task {
   // a Task (independent of the Inbox). When a Task also came from a Resource,
   // this direct url takes precedence for "open" actions.
   url         String?
+  // Optional time of day as "HH:MM" (24h). Null = untimed/"anytime" — a
+  // first-class state, never required (the day stays flexible, ADR-0001).
+  // Stored as a string so it's independent of the date-only `date` column;
+  // zero-padded so it sorts correctly.
+  time        String?
   date        DateTime @db.Date
   completed   Boolean  @default(false)
   createdAt   DateTime @default(now())

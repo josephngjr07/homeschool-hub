@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatTime } from "@/lib/date";
 import {
   setTaskCompletedAction,
   updateTaskAction,
@@ -9,17 +10,18 @@ import {
 
 type ChildOption = { id: string; name: string; color: string };
 
-// One Task row on Today. Collapsed: a dedicated complete button on the left
-// (tap to check/strike — no "overdue"/red state, ADR-0001), the task text
-// (tap to edit), assignee dots, and an "Open link" footer when it has one.
-// Expanded: an inline editor to rename, add notes/a link, move to another day,
-// reassign children, or delete.
+// One Task row on Today. Collapsed: tap the circle or the task text to
+// check/strike it complete (no "overdue"/red state, ADR-0001); an explicit
+// edit (✎) button sits on the right, just left of the assignee dots; an "Open
+// link" footer shows when it has one. Expanded: an inline editor to rename,
+// add notes/a link/a time, move to another day, reassign children, or delete.
 export function TaskItem({
   id,
   title,
   description,
   url,
   linkUrl,
+  time,
   date,
   completed,
   assignedTo,
@@ -30,6 +32,7 @@ export function TaskItem({
   description: string | null;
   url: string | null;
   linkUrl: string | null;
+  time: string | null;
   date: string; // YYYY-MM-DD
   completed: boolean;
   assignedTo: ChildOption[];
@@ -109,13 +112,22 @@ export function TaskItem({
         )}
 
         <div className="flex items-center justify-between gap-2">
-          <input
-            type="date"
-            name="date"
-            defaultValue={date}
-            aria-label="Move to date"
-            className="rounded-lg border border-border bg-transparent px-2 py-1 text-xs text-muted"
-          />
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              name="date"
+              defaultValue={date}
+              aria-label="Move to date"
+              className="rounded-lg border border-border bg-transparent px-2 py-1 text-xs text-muted"
+            />
+            <input
+              type="time"
+              name="time"
+              defaultValue={time ?? ""}
+              aria-label="Time (optional)"
+              className="rounded-lg border border-border bg-transparent px-2 py-1 text-xs text-muted"
+            />
+          </div>
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -149,8 +161,8 @@ export function TaskItem({
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
       <div className="flex items-start gap-3 px-4 py-3">
-        {/* Dedicated complete toggle. */}
-        <form action={setTaskCompletedAction} className="shrink-0">
+        {/* The circle and the task text both toggle completion (one form). */}
+        <form action={setTaskCompletedAction} className="contents">
           <input type="hidden" name="id" value={id} />
           <input
             type="hidden"
@@ -161,7 +173,7 @@ export function TaskItem({
             type="submit"
             aria-label={completed ? "Mark not done" : "Mark done"}
             aria-pressed={completed}
-            className={`mt-0.5 flex h-6 w-6 items-center justify-center rounded-full border text-[12px] transition ${
+            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] transition ${
               completed
                 ? "border-accent bg-accent text-accent-foreground"
                 : "border-foreground/30 hover:border-accent"
@@ -169,26 +181,37 @@ export function TaskItem({
           >
             {completed ? "✓" : ""}
           </button>
+          <button type="submit" className="min-w-0 flex-1 text-left">
+            <span className="flex items-baseline gap-1.5">
+              {time && (
+                <span className="shrink-0 text-xs font-medium text-muted">
+                  {formatTime(time)}
+                </span>
+              )}
+              <span
+                className={`truncate text-sm font-medium ${
+                  completed ? "text-muted line-through" : "text-foreground"
+                }`}
+              >
+                {title}
+              </span>
+            </span>
+            {description ? (
+              <span className="mt-0.5 block text-xs text-muted">
+                {description}
+              </span>
+            ) : null}
+          </button>
         </form>
 
-        {/* Tap the text to edit. */}
+        {/* Explicit edit, to the left of the assignee dots. */}
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="min-w-0 flex-1 text-left"
+          aria-label="Edit task"
+          className="mt-0.5 shrink-0 text-muted hover:text-foreground"
         >
-          <span
-            className={`block text-sm font-medium ${
-              completed ? "text-muted line-through" : "text-foreground"
-            }`}
-          >
-            {title}
-          </span>
-          {description ? (
-            <span className="mt-0.5 block text-xs text-muted">
-              {description}
-            </span>
-          ) : null}
+          ✎
         </button>
 
         {assignedTo.length > 0 ? (

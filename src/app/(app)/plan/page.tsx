@@ -125,6 +125,7 @@ export default async function PlanPage({
                         title: t.title,
                         description: t.description,
                         url: t.url ?? t.resource?.url ?? null,
+                        time: t.time,
                         date: toDateInputValue(t.date),
                         completed: t.completed,
                         childIds: t.children.map((c) => c.id),

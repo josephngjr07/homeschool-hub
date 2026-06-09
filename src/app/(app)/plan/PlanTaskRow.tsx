@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatTime } from "@/lib/date";
 import { updateTaskAction, deleteTaskAction, rescueTaskAction } from "./actions";
 
 type ChildOption = { id: string; name: string; color: string };
@@ -9,6 +10,7 @@ type PlanTask = {
   title: string;
   description: string | null;
   url: string | null;
+  time: string | null;
   date: string; // YYYY-MM-DD
   completed: boolean;
   childIds: string[];
@@ -42,9 +44,18 @@ export function PlanTaskRow({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex-1 truncate text-left text-sm text-foreground"
+          className="flex min-w-0 flex-1 items-baseline gap-1.5 text-left text-sm text-foreground"
         >
-          <span className={task.completed ? "text-muted line-through" : ""}>
+          {task.time && (
+            <span className="shrink-0 text-xs font-medium text-muted">
+              {formatTime(task.time)}
+            </span>
+          )}
+          <span
+            className={`truncate ${
+              task.completed ? "text-muted line-through" : ""
+            }`}
+          >
             {task.title}
           </span>
         </button>
@@ -152,13 +163,22 @@ export function PlanTaskRow({
       )}
 
       <div className="flex items-center justify-between gap-2">
-        <input
-          type="date"
-          name="date"
-          defaultValue={task.date}
-          aria-label="Move to date"
-          className="rounded-lg border border-border bg-transparent px-2 py-1 text-xs text-muted"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            name="date"
+            defaultValue={task.date}
+            aria-label="Move to date"
+            className="rounded-lg border border-border bg-transparent px-2 py-1 text-xs text-muted"
+          />
+          <input
+            type="time"
+            name="time"
+            defaultValue={task.time ?? ""}
+            aria-label="Time (optional)"
+            className="rounded-lg border border-border bg-transparent px-2 py-1 text-xs text-muted"
+          />
+        </div>
         <div className="flex items-center gap-3">
           <button
             type="button"

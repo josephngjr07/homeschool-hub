@@ -66,6 +66,7 @@ export default async function TodayPage({
               description={t.description}
               url={t.url}
               linkUrl={t.url ?? t.resource?.url ?? null}
+              time={t.time}
               date={toDateInputValue(t.date)}
               completed={t.completed}
               assignedTo={t.children}
