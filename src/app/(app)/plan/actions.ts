@@ -8,6 +8,7 @@ import {
   setTaskCompleted,
   createTasksForWeekdays,
   copyWeek,
+  deleteTasksInRange,
 } from "@/data/tasks";
 import { todayInZone, addDays } from "@/lib/date";
 
@@ -98,6 +99,16 @@ export async function createTasksForWeekdaysAction(formData: FormData) {
     weekdays,
     childIds,
   });
+  revalidatePlan();
+}
+
+// Wipe every task in the viewed week at once — the Plan "clear this week" reset.
+export async function clearWeekAction(formData: FormData) {
+  const userId = await requireUserId();
+  const startStr = String(formData.get("weekStart") ?? "");
+  if (!startStr) return;
+  const start = new Date(startStr);
+  await deleteTasksInRange(userId, start, addDays(start, 6));
   revalidatePlan();
 }
 

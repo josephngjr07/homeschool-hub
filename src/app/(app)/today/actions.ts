@@ -7,6 +7,7 @@ import {
   setTaskCompleted,
   updateTask,
   deleteTask,
+  deleteTasksForDate,
 } from "@/data/tasks";
 
 // Server Actions for the Today loop. Each re-checks auth and scopes to the
@@ -104,5 +105,14 @@ export async function deleteTaskAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   await deleteTask(userId, id);
+  revalidateToday();
+}
+
+// Wipe all of a day's tasks at once — the Today "clear all" reset.
+export async function clearDayAction(formData: FormData) {
+  const userId = await requireUserId();
+  const dateStr = String(formData.get("date") ?? "");
+  if (!dateStr) return;
+  await deleteTasksForDate(userId, new Date(dateStr));
   revalidateToday();
 }

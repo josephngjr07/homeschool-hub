@@ -6,6 +6,8 @@ import {
   updateTask,
   getTasksForDate,
   setTaskCompleted,
+  deleteTasksForDate,
+  deleteTasksInRange,
 } from "@/data/tasks";
 
 beforeEach(resetDb);
@@ -53,6 +55,26 @@ describe("tasks data access", () => {
     });
     expect(loosened?.time).toBeNull();
     expect(loosened?.endTime).toBeNull();
+  });
+
+  it("bulk-clears a day, leaving other days; then clears a week range", async () => {
+    const userId = await makeUser();
+    await createTask(userId, { title: "A", date: D("2026-06-08") });
+    await createTask(userId, { title: "B", date: D("2026-06-08") });
+    await createTask(userId, { title: "C", date: D("2026-06-10") });
+
+    const removedDay = await deleteTasksForDate(userId, D("2026-06-08"));
+    expect(removedDay).toBe(2);
+    expect((await getTasksForDate(userId, D("2026-06-08"))).length).toBe(0);
+    // A task on another day is untouched.
+    expect((await getTasksForDate(userId, D("2026-06-10"))).length).toBe(1);
+
+    const removedWeek = await deleteTasksInRange(
+      userId,
+      D("2026-06-08"),
+      D("2026-06-14"),
+    );
+    expect(removedWeek).toBe(1);
   });
 
   it("assigns one task to several children — one row, not duplicates", async () => {

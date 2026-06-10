@@ -155,6 +155,22 @@ export async function deleteTask(userId: string, id: string) {
   return count > 0;
 }
 
+// Bulk-delete this parent's Tasks on a single day — the Today "clear all"
+// reset. Owner-scoped. Returns how many were removed.
+export async function deleteTasksForDate(userId: string, date: Date) {
+  const { count } = await prisma.task.deleteMany({ where: { userId, date } });
+  return count;
+}
+
+// Bulk-delete this parent's Tasks across [start, end] inclusive — the Plan
+// "clear this week" reset. Owner-scoped. Returns how many were removed.
+export async function deleteTasksInRange(userId: string, start: Date, end: Date) {
+  const { count } = await prisma.task.deleteMany({
+    where: { userId, date: { gte: start, lte: end } },
+  });
+  return count;
+}
+
 // --- Recurrence (S5) ------------------------------------------------------
 // Repeats are many INDEPENDENT Tasks, never a recurrence rule (per CONTEXT.md),
 // so these just fan out createTask. weekdays index: 0=Mon … 6=Sun, matching the

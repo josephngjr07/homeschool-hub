@@ -15,8 +15,10 @@ import {
 } from "@/lib/date";
 import { PlanAddForm } from "./PlanAddForm";
 import { TaskRow } from "@/components/TaskRow";
+import { ConfirmClearButton } from "@/components/ConfirmClearButton";
 import {
   copyWeekAction,
+  clearWeekAction,
   updateTaskAction,
   deleteTaskAction,
   setTaskCompletedAction,
@@ -102,6 +104,18 @@ export default async function PlanPage({
           ↻ Copy last week into this week
         </button>
       </form>
+
+      {/* Reset: clear every task in the viewed week. */}
+      {tasks.length > 0 && (
+        <div className="mt-3 text-center">
+          <ConfirmClearButton
+            action={clearWeekAction}
+            fields={{ weekStart: toDateInputValue(weekStart) }}
+            label="Clear this week"
+            count={tasks.length}
+          />
+        </div>
+      )}
 
       <div className="mt-6 space-y-5">
         {days.map((d) => {

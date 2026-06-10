@@ -12,10 +12,12 @@ import {
 import { AddTaskForm } from "./AddTaskForm";
 import { ScheduleView } from "./ScheduleView";
 import { TaskRow } from "@/components/TaskRow";
+import { ConfirmClearButton } from "@/components/ConfirmClearButton";
 import {
   setTaskCompletedAction,
   updateTaskAction,
   deleteTaskAction,
+  clearDayAction,
 } from "./actions";
 
 // The Today view — the single calm "what are we doing today?" screen. Shows the
@@ -161,6 +163,19 @@ export default async function TodayPage({
       <div className="mt-6">
         <AddTaskForm childOptions={children} today={toDateInputValue(today)} />
       </div>
+
+      {/* Reset: clear the whole day at once (shown on the unfiltered view so the
+          count matches what gets deleted). */}
+      {!childFilter && tasks.length > 0 && (
+        <div className="mt-5 text-center">
+          <ConfirmClearButton
+            action={clearDayAction}
+            fields={{ date: toDateInputValue(today) }}
+            label="Clear all tasks today"
+            count={tasks.length}
+          />
+        </div>
+      )}
     </main>
   );
 }
