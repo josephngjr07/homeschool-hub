@@ -408,8 +408,15 @@ export function OnboardingWizard({
       )}
 
       {/* Always available: skip setup and start with a blank plan. Setup never
-          runs again (onboardedAt is stamped), but everything's addable later. */}
+          runs again (onboardedAt is stamped), but everything's addable later.
+          Carry along any children added in step 1 so their names aren't lost. */}
       <form action={skipOnboardingAction} className="mt-6 text-center">
+        {children.map((c) => (
+          <span key={c.id}>
+            <input type="hidden" name="childName" value={c.name} />
+            <input type="hidden" name="childColor" value={c.color} />
+          </span>
+        ))}
         <button
           type="submit"
           className="text-xs text-muted underline-offset-2 hover:text-foreground hover:underline"

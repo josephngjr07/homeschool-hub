@@ -42,16 +42,26 @@ export async function hasOnboarded(userId: string): Promise<boolean> {
   return Boolean(user?.onboardedAt) || childCount > 0 || taskCount > 0;
 }
 
-// Skip setup entirely: stamp onboardedAt without creating any children or a
-// Starter week, so the parent lands on an empty home and builds their own plan
-// from scratch. Same gate as completeOnboarding — does nothing if already
-// onboarded. Returns the updated user, or null if there was nothing to do.
-export async function skipOnboarding(userId: string) {
+// Skip the Starter *week* without seeding any tasks — but still create whatever
+// children the parent entered in step 1, so their names aren't lost. They land
+// on an empty home and build the plan themselves. Same gate as
+// completeOnboarding; returns null if already onboarded.
+export async function skipOnboarding(
+  userId: string,
+  children: { name: string; color: string }[] = [],
+) {
   if (await hasOnboarded(userId)) return null;
-  return prisma.user.update({
+
+  const created: Awaited<ReturnType<typeof createChild>>[] = [];
+  for (const c of children) {
+    created.push(await createChild(userId, c));
+  }
+
+  await prisma.user.update({
     where: { id: userId },
     data: { onboardedAt: new Date() },
   });
+  return { children: created };
 }
 
 // One subject, the weekdays it happens on (0=Mon … 6=Sun), and the resolved

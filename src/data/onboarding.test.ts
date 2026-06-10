@@ -26,6 +26,20 @@ describe("skip onboarding", () => {
     expect(await prisma.task.count({ where: { userId } })).toBe(0);
   });
 
+  it("keeps children added in step 1, but seeds no tasks", async () => {
+    const userId = await makeUser();
+
+    const result = await skipOnboarding(userId, [
+      { name: "Mia", color: "#ef4444" },
+      { name: "Theo", color: "#3b82f6" },
+    ]);
+
+    expect(result?.children.map((c) => c.name)).toEqual(["Mia", "Theo"]);
+    expect(await prisma.child.count({ where: { userId } })).toBe(2);
+    expect(await prisma.task.count({ where: { userId } })).toBe(0);
+    expect(await hasOnboarded(userId)).toBe(true);
+  });
+
   it("does nothing if already onboarded", async () => {
     const userId = await makeUser();
     await skipOnboarding(userId);

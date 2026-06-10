@@ -18,17 +18,7 @@ import { CHILD_COLORS, DEFAULT_CHILD_COLOR } from "@/lib/colors";
 export async function completeOnboardingAction(formData: FormData) {
   const userId = await requireUserId();
 
-  const names = formData.getAll("childName").map((v) => String(v).trim());
-  const colors = formData.getAll("childColor").map(String);
-  const children = names
-    .map((name, i) => ({
-      name: name.slice(0, 40),
-      color: (CHILD_COLORS as readonly string[]).includes(colors[i])
-        ? colors[i]
-        : DEFAULT_CHILD_COLOR,
-    }))
-    .filter((c) => c.name.length > 0);
-
+  const children = parseChildren(formData);
   const items = parseItems(formData.get("items"));
 
   // Need at least one child and one subject-with-days to seed a real week.
@@ -43,12 +33,28 @@ export async function completeOnboardingAction(formData: FormData) {
 }
 
 // Skip the Starter week: mark setup done and go straight to the home page with
-// an empty planner. The parent can add children and tasks whenever they like.
-export async function skipOnboardingAction() {
+// an empty planner — but keep any children the parent already added in step 1,
+// so their names aren't thrown away. They can add tasks whenever they like.
+export async function skipOnboardingAction(formData: FormData) {
   const userId = await requireUserId();
-  await skipOnboarding(userId);
+  await skipOnboarding(userId, parseChildren(formData));
   revalidatePath("/dashboard");
   redirect("/dashboard");
+}
+
+// Children arrive as parallel name/color arrays. Trim/cap names, validate each
+// color against the palette (falling back to the default), and drop the blanks.
+function parseChildren(formData: FormData) {
+  const names = formData.getAll("childName").map((v) => String(v).trim());
+  const colors = formData.getAll("childColor").map(String);
+  return names
+    .map((name, i) => ({
+      name: name.slice(0, 40),
+      color: (CHILD_COLORS as readonly string[]).includes(colors[i])
+        ? colors[i]
+        : DEFAULT_CHILD_COLOR,
+    }))
+    .filter((c) => c.name.length > 0);
 }
 
 // Defensively turn the submitted JSON into clean DraftItems: trim/cap subject
