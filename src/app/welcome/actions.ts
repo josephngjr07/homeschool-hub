@@ -3,7 +3,11 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "@/lib/session";
-import { completeOnboarding, type DraftItem } from "@/data/onboarding";
+import {
+  completeOnboarding,
+  skipOnboarding,
+  type DraftItem,
+} from "@/data/onboarding";
 import { CHILD_COLORS, DEFAULT_CHILD_COLOR } from "@/lib/colors";
 
 // Finish the two-step setup: create the children, seed the Starter week, stamp
@@ -36,6 +40,15 @@ export async function completeOnboardingAction(formData: FormData) {
   revalidatePath("/today");
   revalidatePath("/dashboard");
   redirect("/plan");
+}
+
+// Skip the Starter week: mark setup done and go straight to the home page with
+// an empty planner. The parent can add children and tasks whenever they like.
+export async function skipOnboardingAction() {
+  const userId = await requireUserId();
+  await skipOnboarding(userId);
+  revalidatePath("/dashboard");
+  redirect("/dashboard");
 }
 
 // Defensively turn the submitted JSON into clean DraftItems: trim/cap subject

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { CHILD_COLORS, DEFAULT_CHILD_COLOR } from "@/lib/colors";
-import { completeOnboardingAction } from "./actions";
+import { completeOnboardingAction, skipOnboardingAction } from "./actions";
 
 type DraftChild = { id: string; name: string; color: string };
 type SubjectOption = { name: string; hint?: string };
@@ -406,6 +406,17 @@ export function OnboardingWizard({
           </div>
         </form>
       )}
+
+      {/* Always available: skip setup and start with a blank plan. Setup never
+          runs again (onboardedAt is stamped), but everything's addable later. */}
+      <form action={skipOnboardingAction} className="mt-6 text-center">
+        <button
+          type="submit"
+          className="text-xs text-muted underline-offset-2 hover:text-foreground hover:underline"
+        >
+          Skip for now — start with a blank plan
+        </button>
+      </form>
     </div>
   );
 }

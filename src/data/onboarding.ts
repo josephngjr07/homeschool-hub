@@ -42,6 +42,18 @@ export async function hasOnboarded(userId: string): Promise<boolean> {
   return Boolean(user?.onboardedAt) || childCount > 0 || taskCount > 0;
 }
 
+// Skip setup entirely: stamp onboardedAt without creating any children or a
+// Starter week, so the parent lands on an empty home and builds their own plan
+// from scratch. Same gate as completeOnboarding — does nothing if already
+// onboarded. Returns the updated user, or null if there was nothing to do.
+export async function skipOnboarding(userId: string) {
+  if (await hasOnboarded(userId)) return null;
+  return prisma.user.update({
+    where: { id: userId },
+    data: { onboardedAt: new Date() },
+  });
+}
+
 // One subject, the weekdays it happens on (0=Mon … 6=Sun), and the resolved
 // child ids it's for. Each (subject, day) pair becomes one independent Task — so
 // "Bible every weekday, Art twice" is just different-length day lists, never a

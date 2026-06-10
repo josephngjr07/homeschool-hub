@@ -6,12 +6,32 @@ import { startOfWeek, addDays, todayInZone } from "@/lib/date";
 import {
   generateStarterWeek,
   completeOnboarding,
+  skipOnboarding,
   hasOnboarded,
 } from "@/data/onboarding";
 
 beforeEach(resetDb);
 
 const D = (s: string) => new Date(s);
+
+describe("skip onboarding", () => {
+  it("stamps onboardedAt without creating children or tasks", async () => {
+    const userId = await makeUser();
+    expect(await hasOnboarded(userId)).toBe(false);
+
+    await skipOnboarding(userId);
+
+    expect(await hasOnboarded(userId)).toBe(true);
+    expect(await prisma.child.count({ where: { userId } })).toBe(0);
+    expect(await prisma.task.count({ where: { userId } })).toBe(0);
+  });
+
+  it("does nothing if already onboarded", async () => {
+    const userId = await makeUser();
+    await skipOnboarding(userId);
+    expect(await skipOnboarding(userId)).toBeNull();
+  });
+});
 
 describe("onboarding → starter week (S7)", () => {
   it("generateStarterWeek makes one Task per (subject, chosen day), honoring per-subject days", async () => {
