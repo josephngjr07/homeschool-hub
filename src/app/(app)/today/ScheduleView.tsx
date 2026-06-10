@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { formatTime, addMinutesToTime } from "@/lib/date";
+import { formatTime } from "@/lib/date";
 import { setTaskCompletedAction, setTaskTimesAction } from "./actions";
 import { TimeRangeInputs } from "@/components/TimeRangeInputs";
 
@@ -214,8 +214,6 @@ export function ScheduleView({
         (() => {
           const t = tasks.find((x) => x.id === editingId);
           if (!t) return null;
-          const defStart = t.time ?? "09:00";
-          const defEnd = t.endTime ?? addMinutesToTime(defStart, 60);
           return (
             <form
               key={editingId}
@@ -250,7 +248,10 @@ export function ScheduleView({
                 </p>
               </div>
 
-              <TimeRangeInputs defaultStart={defStart} defaultEnd={defEnd} />
+              <TimeRangeInputs
+                defaultStart={t.time ?? "09:00"}
+                defaultEnd={t.endTime ?? ""}
+              />
 
               <div className="flex items-center justify-between gap-3">
                 <button
