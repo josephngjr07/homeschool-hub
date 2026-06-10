@@ -73,6 +73,21 @@ export function formatTime(time: string | null | undefined): string | null {
   return `${hour12}:${String(m).padStart(2, "0")} ${period}`;
 }
 
+// Minutes since midnight right now, in the family's timezone (0–1439). Used to
+// place a gentle "now" line on the Schedule grid. Computed server-side so it
+// doesn't depend on the viewer's device clock/zone.
+export function nowMinutesInZone(timeZone = APP_TIME_ZONE): number {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date());
+  const h = Number(parts.find((p) => p.type === "hour")?.value ?? 0);
+  const m = Number(parts.find((p) => p.type === "minute")?.value ?? 0);
+  return (h % 24) * 60 + m;
+}
+
 export function formatShortDate(d: Date): string {
   return d.toLocaleDateString("en-US", {
     weekday: "short",

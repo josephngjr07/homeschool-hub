@@ -76,6 +76,20 @@ export async function updateTaskAction(formData: FormData) {
   revalidateToday();
 }
 
+// Slot a task into (or out of) a time, from the Schedule grid. Only touches the
+// `time` field — leaving title/notes/link/children/date untouched (updateTask
+// does a partial update). Empty time = back to "Anytime" (untimed is a
+// first-class, no-pressure state, ADR-0001).
+export async function setTaskTimeAction(formData: FormData) {
+  const userId = await requireUserId();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  const time = String(formData.get("time") ?? "").trim();
+
+  await updateTask(userId, id, { time: time || null });
+  revalidateToday();
+}
+
 export async function deleteTaskAction(formData: FormData) {
   const userId = await requireUserId();
   const id = String(formData.get("id") ?? "");
