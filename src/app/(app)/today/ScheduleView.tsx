@@ -1,26 +1,32 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { formatTime } from "@/lib/date";
-import { setTaskCompletedAction, setTaskTimeAction } from "./actions";
+import { formatTime, addMinutesToTime } from "@/lib/date";
+import { setTaskCompletedAction, setTaskTimesAction } from "./actions";
 
 type ChildOption = { id: string; name: string; color: string };
 type GridTask = {
   id: string;
   title: string;
-  time: string | null; // "HH:MM" or null = Anytime
+  time: string | null; // "HH:MM" start, null = Anytime
+  endTime: string | null; // "HH:MM" end
   completed: boolean;
   assignedTo: ChildOption[];
 };
 
-// The default visible window: 7am–7pm. Calm by design — we don't show the
-// whole 24h day (that just makes the morning feel "late"). The window quietly
-// stretches to fit any task a mom has slotted earlier or later.
-const DEFAULT_START = 7;
-const DEFAULT_END = 19; // last hour row shown (7pm)
+// Calm default window: 7am–7pm. It quietly stretches to fit anything slotted
+// earlier/later so the morning never feels "late". One hour = HOUR_PX tall, so
+// a 90-min task draws 1.5× a 60-min one (a real calendar block).
+const DEFAULT_START_HOUR = 7;
+const DEFAULT_END_HOUR = 19;
+const HOUR_PX = 56;
+const MIN_BLOCK_PX = 24; // keep very short tasks tappable
+const MAX_COLS = 2; // overlaps beyond this fold into a "+N" chip
 
-const hourOf = (time: string) => Number(time.slice(0, 2));
-const pad = (n: number) => String(n).padStart(2, "0");
+const parseMin = (t: string) => {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+};
 
 function hourLabel(h: number): string {
   const period = h < 12 ? "AM" : "PM";
@@ -28,10 +34,19 @@ function hourLabel(h: number): string {
   return `${h12} ${period}`;
 }
 
-// The Schedule grid — an hourly ruler for today. Timed Tasks sit on their hour;
-// untimed ones wait calmly in the "Anytime" tray and are never forced onto the
-// clock. Tap an empty slot to drop an Anytime task into that hour; tap a Task to
-// nudge its time or send it back to Anytime. No drag, no overdue, no red.
+type Laid = {
+  task: GridTask;
+  top: number;
+  height: number;
+  leftPct: number;
+  widthPct: number;
+};
+
+// The Schedule grid — a proportional day timeline for today. Timed tasks are
+// blocks spanning start→end; untimed ones wait in the "Anytime" tray and are
+// never forced onto the clock (ADR-0001). Tap a block or an Anytime chip to open
+// the editor and set/adjust its time; no drag. Overlaps sit side-by-side (max
+// two columns); a third+ folds into a "+N" chip.
 export function ScheduleView({
   tasks,
   nowMinutes,
@@ -39,22 +54,41 @@ export function ScheduleView({
   tasks: GridTask[];
   nowMinutes: number;
 }) {
-  const [addingHour, setAddingHour] = useState<number | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<{
+    id: string;
+    start: string;
+    end: string;
+  } | null>(null);
   const [pending, startTransition] = useTransition();
 
   const untimed = tasks.filter((t) => !t.time);
   const timed = tasks.filter((t) => t.time);
 
-  function setTime(id: string, time: string) {
+  function openEditor(t: GridTask) {
+    const start = t.time ?? "09:00";
+    const end = t.endTime ?? addMinutesToTime(start, 60);
+    setEditing({ id: t.id, start, end });
+  }
+
+  function saveTimes(id: string, start: string, end: string) {
     const fd = new FormData();
     fd.set("id", id);
-    fd.set("time", time);
+    fd.set("time", start);
+    fd.set("endTime", end);
     startTransition(async () => {
-      await setTaskTimeAction(fd);
+      await setTaskTimesAction(fd);
     });
-    setAddingHour(null);
-    setEditingId(null);
+    setEditing(null);
+  }
+
+  function clearTime(id: string) {
+    const fd = new FormData();
+    fd.set("id", id);
+    fd.set("time", "");
+    startTransition(async () => {
+      await setTaskTimesAction(fd);
+    });
+    setEditing(null);
   }
 
   function toggleComplete(id: string, completed: boolean) {
@@ -66,15 +100,86 @@ export function ScheduleView({
     });
   }
 
-  // Stretch the window to include anything slotted outside 7am–7pm.
-  const hours = timed.map((t) => hourOf(t.time!));
-  const startHour = Math.min(DEFAULT_START, ...hours);
-  const endHour = Math.max(DEFAULT_END, ...hours);
-  const rows = Array.from(
+  // --- Window ---------------------------------------------------------------
+  const starts = timed.map((t) => parseMin(t.time!));
+  const ends = timed.map((t) =>
+    t.endTime ? parseMin(t.endTime) : parseMin(t.time!) + 60,
+  );
+  const startHour = Math.max(
+    0,
+    Math.min(DEFAULT_START_HOUR, ...starts.map((s) => Math.floor(s / 60))),
+  );
+  const endHour = Math.min(
+    24,
+    Math.max(DEFAULT_END_HOUR, ...ends.map((e) => Math.ceil(e / 60))),
+  );
+  const windowStartMin = startHour * 60;
+  const hourLines = Array.from(
     { length: endHour - startHour + 1 },
     (_, i) => startHour + i,
   );
-  const nowHour = Math.floor(nowMinutes / 60);
+  const gridHeight = (endHour - startHour) * HOUR_PX;
+
+  // --- Lay out blocks into overlap clusters / columns -----------------------
+  const sorted = [...timed]
+    .map((t) => {
+      const s = parseMin(t.time!);
+      const e = Math.max(t.endTime ? parseMin(t.endTime) : s + 60, s + 15);
+      return { task: t, s, e };
+    })
+    .sort((a, b) => a.s - b.s || a.e - b.e);
+
+  const laid: Laid[] = [];
+  const overflow: { top: number; count: number }[] = [];
+  let cluster: typeof sorted = [];
+  let clusterEnd = -1;
+
+  const flush = () => {
+    if (!cluster.length) return;
+    const lanes: number[] = []; // lane -> last end minute
+    const placed = cluster.map((item) => {
+      let lane = lanes.findIndex((end) => end <= item.s);
+      if (lane === -1) {
+        lanes.push(item.e);
+        lane = lanes.length - 1;
+      } else {
+        lanes[lane] = item.e;
+      }
+      return { item, lane };
+    });
+    const cols = Math.min(lanes.length, MAX_COLS);
+    let overflowCount = 0;
+    for (const { item, lane } of placed) {
+      if (lane >= MAX_COLS) {
+        overflowCount += 1;
+        continue;
+      }
+      laid.push({
+        task: item.task,
+        top: ((item.s - windowStartMin) / 60) * HOUR_PX,
+        height: Math.max(((item.e - item.s) / 60) * HOUR_PX, MIN_BLOCK_PX),
+        leftPct: (lane * 100) / cols,
+        widthPct: 100 / cols,
+      });
+    }
+    if (overflowCount > 0) {
+      overflow.push({
+        top: ((cluster[0].s - windowStartMin) / 60) * HOUR_PX,
+        count: overflowCount,
+      });
+    }
+    cluster = [];
+  };
+
+  for (const item of sorted) {
+    if (cluster.length && item.s >= clusterEnd) flush();
+    cluster.push(item);
+    clusterEnd = Math.max(clusterEnd, item.e);
+  }
+  flush();
+
+  const nowInWindow = nowMinutes >= windowStartMin && nowMinutes <= endHour * 60;
+  const nowTop = ((nowMinutes - windowStartMin) / 60) * HOUR_PX;
 
   return (
     <div className={pending ? "opacity-60 transition-opacity" : undefined}>
@@ -83,7 +188,7 @@ export function ScheduleView({
         <p className="mb-2 text-xs font-medium text-muted">Anytime</p>
         {untimed.length === 0 ? (
           <p className="text-xs text-muted/70">
-            Everything has a time — tap a task below to loosen it.
+            Everything has a time — tap a block to loosen it.
           </p>
         ) : (
           <div className="flex flex-wrap gap-1.5">
@@ -91,7 +196,7 @@ export function ScheduleView({
               <button
                 key={t.id}
                 type="button"
-                onClick={() => setEditingId(editingId === t.id ? null : t.id)}
+                onClick={() => openEditor(t)}
                 className={`flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium transition hover:border-accent ${
                   t.completed ? "text-muted line-through" : "text-foreground"
                 }`}
@@ -108,179 +213,191 @@ export function ScheduleView({
             ))}
           </div>
         )}
-        {/* Inline time editor for an Anytime task being slotted. */}
-        {editingId && untimed.some((t) => t.id === editingId) && (
-          <TimeEditor
-            time=""
-            onPick={(time) => setTime(editingId, time)}
-            onClear={() => setEditingId(null)}
-            clearLabel="Cancel"
-          />
-        )}
       </div>
 
-      {/* Hourly ruler. */}
-      <div className="mt-3">
-        {rows.map((h) => {
-          const here = timed.filter((t) => hourOf(t.time!) === h);
-          const isNow = h === nowHour;
+      {/* Editor panel — appears when a block or Anytime chip is tapped. */}
+      {editing &&
+        (() => {
+          const t = tasks.find((x) => x.id === editing.id);
+          if (!t) return null;
           return (
-            <div key={h} className="flex gap-3">
-              <div
-                className={`w-12 shrink-0 pt-1.5 text-right text-xs ${
-                  isNow ? "font-semibold text-accent-strong" : "text-muted"
-                }`}
-              >
-                {hourLabel(h)}
+            <div className="mt-3 space-y-3 rounded-2xl border border-border bg-card p-3 shadow-sm">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  aria-label={t.completed ? "Mark not done" : "Mark done"}
+                  aria-pressed={t.completed}
+                  onClick={() => toggleComplete(t.id, t.completed)}
+                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[9px] transition ${
+                    t.completed
+                      ? "border-accent bg-accent text-accent-foreground"
+                      : "border-foreground/30 hover:border-accent"
+                  }`}
+                >
+                  {t.completed ? "✓" : ""}
+                </button>
+                <p
+                  className={`text-sm font-medium ${
+                    t.completed ? "text-muted line-through" : "text-foreground"
+                  }`}
+                >
+                  {t.title}
+                </p>
               </div>
-              <div
-                className={`min-h-12 flex-1 space-y-1.5 border-t py-1.5 ${
-                  isNow ? "border-accent/40" : "border-border"
-                }`}
-              >
-                {here.map((t) => (
-                  <div
-                    key={t.id}
-                    className="rounded-xl border border-border bg-card px-3 py-2 shadow-sm"
-                  >
-                    <div className="flex items-start gap-2">
-                      <button
-                        type="button"
-                        aria-label={t.completed ? "Mark not done" : "Mark done"}
-                        aria-pressed={t.completed}
-                        onClick={() => toggleComplete(t.id, t.completed)}
-                        className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[9px] transition ${
-                          t.completed
-                            ? "border-accent bg-accent text-accent-foreground"
-                            : "border-foreground/30 hover:border-accent"
-                        }`}
-                      >
-                        {t.completed ? "✓" : ""}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setEditingId(editingId === t.id ? null : t.id)
-                        }
-                        className="min-w-0 flex-1 text-left"
-                      >
-                        <span className="flex items-baseline gap-1.5">
-                          <span className="shrink-0 text-xs font-medium text-muted">
-                            {formatTime(t.time)}
-                          </span>
-                          <span
-                            className={`truncate text-sm font-medium ${
-                              t.completed
-                                ? "text-muted line-through"
-                                : "text-foreground"
-                            }`}
-                          >
-                            {t.title}
-                          </span>
-                        </span>
-                      </button>
-                      {t.assignedTo.length > 0 && (
-                        <span className="mt-1 flex shrink-0 -space-x-1">
-                          {t.assignedTo.map((c) => (
-                            <span
-                              key={c.id}
-                              className="h-2.5 w-2.5 rounded-full ring-2 ring-card"
-                              style={{ backgroundColor: c.color }}
-                              title={c.name}
-                            />
-                          ))}
-                        </span>
-                      )}
-                    </div>
-                    {editingId === t.id && (
-                      <TimeEditor
-                        time={t.time ?? ""}
-                        onPick={(time) => setTime(t.id, time)}
-                        onClear={() => setTime(t.id, "")}
-                        clearLabel="Back to Anytime"
-                      />
-                    )}
-                  </div>
-                ))}
-
-                {/* Tap an empty hour to drop an Anytime task in. */}
-                {addingHour === h ? (
-                  <div className="rounded-xl border border-border bg-card p-2">
-                    {untimed.length === 0 ? (
-                      <p className="px-1 py-1 text-xs text-muted">
-                        Nothing waiting in Anytime.
-                      </p>
-                    ) : (
-                      <div className="flex flex-wrap gap-1.5">
-                        {untimed.map((t) => (
-                          <button
-                            key={t.id}
-                            type="button"
-                            onClick={() => setTime(t.id, `${pad(h)}:00`)}
-                            className="rounded-full border border-border px-2.5 py-1 text-xs font-medium text-foreground transition hover:border-accent"
-                          >
-                            {t.title}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setAddingHour(null)}
-                      className="mt-1.5 px-1 text-xs text-muted hover:text-foreground"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="time"
+                  value={editing.start}
+                  aria-label="Start time"
+                  onChange={(e) =>
+                    setEditing((s) =>
+                      s
+                        ? {
+                            ...s,
+                            start: e.target.value,
+                            end:
+                              e.target.value && s.end <= e.target.value
+                                ? addMinutesToTime(e.target.value, 60)
+                                : s.end,
+                          }
+                        : s,
+                    )
+                  }
+                  className="rounded-lg border border-border bg-transparent px-2 py-1 text-xs text-foreground"
+                />
+                <span className="text-xs text-muted">–</span>
+                <input
+                  type="time"
+                  value={editing.end}
+                  aria-label="End time"
+                  onChange={(e) =>
+                    setEditing((s) => (s ? { ...s, end: e.target.value } : s))
+                  }
+                  className="rounded-lg border border-border bg-transparent px-2 py-1 text-xs text-foreground"
+                />
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => clearTime(editing.id)}
+                  className="text-xs text-muted hover:text-foreground"
+                >
+                  Back to Anytime
+                </button>
+                <div className="flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => setAddingHour(h)}
-                    className="w-full rounded-lg py-1 text-left text-xs text-muted/40 transition hover:text-accent-strong"
+                    onClick={() => setEditing(null)}
+                    className="text-xs text-muted hover:text-foreground"
                   >
-                    + add
+                    Cancel
                   </button>
-                )}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      saveTimes(editing.id, editing.start, editing.end)
+                    }
+                    className="rounded-lg bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:opacity-90"
+                  >
+                    Save time
+                  </button>
+                </div>
               </div>
             </div>
           );
-        })}
-      </div>
-    </div>
-  );
-}
+        })()}
 
-// A tiny time control reused by both the Anytime tray and the on-grid cards: a
-// native time picker plus a "loosen"/cancel escape hatch.
-function TimeEditor({
-  time,
-  onPick,
-  onClear,
-  clearLabel,
-}: {
-  time: string;
-  onPick: (time: string) => void;
-  onClear: () => void;
-  clearLabel: string;
-}) {
-  return (
-    <div className="mt-2 flex items-center gap-3 border-t border-border pt-2">
-      <input
-        type="time"
-        defaultValue={time}
-        aria-label="Set time"
-        onChange={(e) => {
-          if (e.target.value) onPick(e.target.value);
-        }}
-        className="rounded-lg border border-border bg-transparent px-2 py-1 text-xs text-foreground"
-      />
-      <button
-        type="button"
-        onClick={onClear}
-        className="text-xs text-muted hover:text-foreground"
-      >
-        {clearLabel}
-      </button>
+      {/* The proportional timeline. */}
+      <div className="mt-3 flex">
+        <div className="w-12 shrink-0">
+          {hourLines.map((h, i) => (
+            <div
+              key={h}
+              style={{ height: i === hourLines.length - 1 ? 0 : HOUR_PX }}
+              className={`pr-2 text-right text-[11px] ${
+                Math.floor(nowMinutes / 60) === h
+                  ? "font-semibold text-accent-strong"
+                  : "text-muted"
+              }`}
+            >
+              {hourLabel(h)}
+            </div>
+          ))}
+        </div>
+
+        <div className="relative flex-1" style={{ height: gridHeight }}>
+          {/* hour lines */}
+          {hourLines.map((h, i) => (
+            <div
+              key={h}
+              className="absolute inset-x-0 border-t border-border"
+              style={{ top: i * HOUR_PX }}
+            />
+          ))}
+
+          {/* gentle "now" marker */}
+          {nowInWindow && (
+            <div
+              className="absolute inset-x-0 z-10 border-t border-accent/50"
+              style={{ top: nowTop }}
+            >
+              <span className="absolute -left-1 -top-1 h-2 w-2 rounded-full bg-accent" />
+            </div>
+          )}
+
+          {/* task blocks */}
+          {laid.map(({ task: t, top, height, leftPct, widthPct }) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => openEditor(t)}
+              style={{
+                top,
+                height,
+                left: `calc(${leftPct}% + 2px)`,
+                width: `calc(${widthPct}% - 4px)`,
+              }}
+              className={`absolute overflow-hidden rounded-lg border px-2 py-1 text-left shadow-sm transition ${
+                t.completed
+                  ? "border-border bg-card/70"
+                  : "border-accent/30 bg-accent/10 hover:border-accent"
+              }`}
+            >
+              <span className="flex items-center gap-1">
+                {t.assignedTo.slice(0, 3).map((c) => (
+                  <span
+                    key={c.id}
+                    className="h-1.5 w-1.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: c.color }}
+                  />
+                ))}
+                <span
+                  className={`truncate text-xs font-medium ${
+                    t.completed ? "text-muted line-through" : "text-foreground"
+                  }`}
+                >
+                  {t.title}
+                </span>
+              </span>
+              <span className="block truncate text-[10px] text-muted">
+                {formatTime(t.time)}
+                {t.endTime ? `–${formatTime(t.endTime)}` : ""}
+              </span>
+            </button>
+          ))}
+
+          {/* overflow chips for 3rd+ overlapping tasks */}
+          {overflow.map((o, i) => (
+            <span
+              key={i}
+              style={{ top: o.top + 2 }}
+              className="absolute right-0.5 z-10 rounded-full border border-border bg-card px-1.5 text-[10px] font-medium text-muted"
+            >
+              +{o.count}
+            </span>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

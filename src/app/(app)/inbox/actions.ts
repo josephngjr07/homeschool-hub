@@ -65,6 +65,7 @@ export async function planResourceAction(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const time = String(formData.get("time") ?? "").trim();
+  const endTime = String(formData.get("endTime") ?? "").trim();
   const weekStartStr = String(formData.get("weekStart") ?? "");
   const weekdays = formData
     .getAll("weekdays")
@@ -78,6 +79,7 @@ export async function planResourceAction(formData: FormData) {
     title,
     description: description || null,
     time: time || null,
+    endTime: time ? endTime || null : null,
     weekStart: new Date(weekStartStr),
     weekdays,
     childIds,

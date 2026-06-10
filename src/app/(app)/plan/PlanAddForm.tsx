@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { createTasksForWeekdaysAction } from "./actions";
+import { TimeRangeInputs } from "@/components/TimeRangeInputs";
 
 type ChildOption = { id: string; name: string; color: string };
 
@@ -61,12 +62,9 @@ export function PlanAddForm({
         spellCheck={false}
         className="mt-2 w-full bg-transparent text-xs text-foreground outline-none placeholder:text-muted/70"
       />
-      <input
-        type="time"
-        name="time"
-        aria-label="Time (optional)"
-        className="mt-2 rounded-lg border border-border bg-transparent px-2 py-1 text-xs text-muted"
-      />
+      <div className="mt-2">
+        <TimeRangeInputs />
+      </div>
 
       <div className="mt-3 flex flex-wrap gap-1.5">
         {DAY_LABELS.map((label, i) => {

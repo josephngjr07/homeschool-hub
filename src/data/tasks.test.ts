@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma, resetDb, makeUser } from "@/test/db";
 import { createChild } from "@/data/children";
-import { createTask, getTasksForDate, setTaskCompleted } from "@/data/tasks";
+import {
+  createTask,
+  updateTask,
+  getTasksForDate,
+  setTaskCompleted,
+} from "@/data/tasks";
 
 beforeEach(resetDb);
 
@@ -24,6 +29,30 @@ describe("tasks data access", () => {
       completed: false,
       userId,
     });
+  });
+
+  it("stores and updates an optional start/end time", async () => {
+    const userId = await makeUser();
+
+    const task = await createTask(userId, {
+      title: "Math",
+      date: D("2026-06-08"),
+      time: "09:00",
+      endTime: "10:30",
+    });
+    expect(task).toMatchObject({ time: "09:00", endTime: "10:30" });
+
+    // Widen the block.
+    const widened = await updateTask(userId, task.id, { endTime: "11:00" });
+    expect(widened?.endTime).toBe("11:00");
+
+    // Loosening it back to "Anytime" clears both ends.
+    const loosened = await updateTask(userId, task.id, {
+      time: null,
+      endTime: null,
+    });
+    expect(loosened?.time).toBeNull();
+    expect(loosened?.endTime).toBeNull();
   });
 
   it("assigns one task to several children — one row, not duplicates", async () => {

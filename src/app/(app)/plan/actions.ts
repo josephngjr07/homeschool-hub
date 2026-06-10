@@ -5,6 +5,7 @@ import { requireUserId } from "@/lib/session";
 import {
   updateTask,
   deleteTask,
+  setTaskCompleted,
   createTasksForWeekdays,
   copyWeek,
 } from "@/data/tasks";
@@ -27,6 +28,7 @@ export async function updateTaskAction(formData: FormData) {
   const description = String(formData.get("description") ?? "").trim();
   const url = String(formData.get("url") ?? "").trim();
   const time = String(formData.get("time") ?? "").trim();
+  const endTime = String(formData.get("endTime") ?? "").trim();
   const dateStr = String(formData.get("date") ?? "");
   const childIds = formData.getAll("childIds").map(String).filter(Boolean);
 
@@ -35,6 +37,7 @@ export async function updateTaskAction(formData: FormData) {
     description: description || null,
     url: url || null,
     time: time || null,
+    endTime: time ? endTime || null : null,
     ...(dateStr ? { date: new Date(dateStr) } : {}),
     childIds,
   });
@@ -46,6 +49,17 @@ export async function deleteTaskAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   await deleteTask(userId, id);
+  revalidatePlan();
+}
+
+// Plan rows can now be checked off in place (same circle as Today). Win-only,
+// no overdue state (ADR-0001).
+export async function setTaskCompletedAction(formData: FormData) {
+  const userId = await requireUserId();
+  const id = String(formData.get("id") ?? "");
+  const completed = String(formData.get("completed") ?? "") === "true";
+  if (!id) return;
+  await setTaskCompleted(userId, id, completed);
   revalidatePlan();
 }
 
@@ -64,6 +78,7 @@ export async function createTasksForWeekdaysAction(formData: FormData) {
   const description = String(formData.get("description") ?? "").trim();
   const url = String(formData.get("url") ?? "").trim();
   const time = String(formData.get("time") ?? "").trim();
+  const endTime = String(formData.get("endTime") ?? "").trim();
   const weekStartStr = String(formData.get("weekStart") ?? "");
   const weekdays = formData
     .getAll("weekdays")
@@ -78,6 +93,7 @@ export async function createTasksForWeekdaysAction(formData: FormData) {
     description: description || null,
     url: url || null,
     time: time || null,
+    endTime: time ? endTime || null : null,
     weekStart: new Date(weekStartStr),
     weekdays,
     childIds,

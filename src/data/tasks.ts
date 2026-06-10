@@ -12,6 +12,7 @@ type CreateTaskInput = {
   description?: string | null;
   url?: string | null;
   time?: string | null;
+  endTime?: string | null;
   date: Date;
   childIds?: string[];
   // Link back to the Inbox Resource this Task was planned from (S6). Only
@@ -49,6 +50,7 @@ export async function createTask(userId: string, input: CreateTaskInput) {
       description: input.description ?? null,
       url: input.url ?? null,
       time: input.time ?? null,
+      endTime: input.endTime ?? null,
       date: input.date,
       resourceId,
       children: { connect: owned.map((c) => ({ id: c.id })) },
@@ -109,6 +111,7 @@ export async function updateTask(
     description?: string | null;
     url?: string | null;
     time?: string | null;
+    endTime?: string | null;
     date?: Date;
     childIds?: string[];
   },
@@ -138,6 +141,7 @@ export async function updateTask(
         : {}),
       ...(data.url !== undefined ? { url: data.url } : {}),
       ...(data.time !== undefined ? { time: data.time } : {}),
+      ...(data.endTime !== undefined ? { endTime: data.endTime } : {}),
       ...(data.date !== undefined ? { date: data.date } : {}),
       ...(children ? { children } : {}),
     },
@@ -163,6 +167,7 @@ export async function createTasksForWeekdays(
     description?: string | null;
     url?: string | null;
     time?: string | null;
+    endTime?: string | null;
     weekStart: Date;
     weekdays: number[];
     childIds?: string[];
@@ -176,6 +181,7 @@ export async function createTasksForWeekdays(
         description: input.description ?? null,
         url: input.url ?? null,
         time: input.time ?? null,
+        endTime: input.endTime ?? null,
         date: addDays(input.weekStart, offset),
         childIds: input.childIds,
       }),
@@ -207,6 +213,7 @@ export async function copyWeek(
       description: task.description,
       url: task.url,
       time: task.time,
+      endTime: task.endTime,
       date: addDays(task.date, offsetDays),
       childIds: task.children.map((c) => c.id),
     });

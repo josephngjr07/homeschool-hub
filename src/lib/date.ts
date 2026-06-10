@@ -96,3 +96,16 @@ export function formatShortDate(d: Date): string {
     timeZone: "UTC",
   });
 }
+
+// Add `minutes` to an "HH:MM" string, clamped to the same day (never wraps past
+// midnight — a schedule block shouldn't silently land on the next day). Used to
+// default a task's end time to start + 1h. Returns the input unchanged if it
+// isn't a valid time.
+export function addMinutesToTime(time: string, minutes: number): string {
+  const [h, m] = time.split(":").map(Number);
+  if (!Number.isInteger(h) || !Number.isInteger(m)) return time;
+  const total = Math.min(h * 60 + m + minutes, 23 * 60 + 59);
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(
+    total % 60,
+  ).padStart(2, "0")}`;
+}

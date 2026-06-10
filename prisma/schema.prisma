@@ -72,6 +72,11 @@ model Task {
   // Stored as a string so it's independent of the date-only `date` column;
   // zero-padded so it sorts correctly.
   time        String?
+  // Optional end time as "HH:MM" (24h) — the companion to `time`. Only
+  // meaningful when `time` is set (an end with no start is never written). The
+  // UI defaults it to start + 1h but the parent can widen it; we don't enforce
+  // end > start (calm and forgiving, ADR-0001).
+  endTime     String?
   date        DateTime @db.Date
   completed   Boolean  @default(false)
   createdAt   DateTime @default(now())

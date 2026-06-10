@@ -14,8 +14,14 @@ import {
   isBefore,
 } from "@/lib/date";
 import { PlanAddForm } from "./PlanAddForm";
-import { PlanTaskRow } from "./PlanTaskRow";
-import { copyWeekAction } from "./actions";
+import { TaskRow } from "@/components/TaskRow";
+import {
+  copyWeekAction,
+  updateTaskAction,
+  deleteTaskAction,
+  setTaskCompletedAction,
+  rescueTaskAction,
+} from "./actions";
 
 // The weekly plan — seven days, each with its tasks. Edit / move / delete /
 // rescue happen inline per task; add-to-weekdays and copy-last-week sit on top.
@@ -118,21 +124,29 @@ export default async function PlanPage({
                   <p className="text-xs text-muted/60">—</p>
                 ) : (
                   dayTasks.map((t) => (
-                    <PlanTaskRow
+                    <TaskRow
                       key={t.id}
                       task={{
                         id: t.id,
                         title: t.title,
                         description: t.description,
-                        url: t.url ?? t.resource?.url ?? null,
+                        url: t.url,
+                        linkUrl: t.url ?? t.resource?.url ?? null,
                         time: t.time,
+                        endTime: t.endTime,
                         date: toDateInputValue(t.date),
                         completed: t.completed,
-                        childIds: t.children.map((c) => c.id),
-                        childColors: t.children.map((c) => c.color),
+                        assignedTo: t.children,
                       }}
                       childOptions={children}
+                      variant="plan"
                       isPast={isPast}
+                      actions={{
+                        setCompleted: setTaskCompletedAction,
+                        update: updateTaskAction,
+                        remove: deleteTaskAction,
+                        rescue: rescueTaskAction,
+                      }}
                     />
                   ))
                 )}

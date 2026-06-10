@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { createTaskAction } from "./actions";
+import { TimeRangeInputs } from "@/components/TimeRangeInputs";
 
 type ChildOption = { id: string; name: string; color: string };
 
@@ -100,8 +101,8 @@ export function AddTaskForm({
         </div>
       )}
 
-      <div className="mt-3 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <input
             type="date"
             name="date"
@@ -109,12 +110,7 @@ export function AddTaskForm({
             aria-label="Task date"
             className="rounded-lg border border-border bg-transparent px-2 py-1 text-xs text-muted"
           />
-          <input
-            type="time"
-            name="time"
-            aria-label="Time (optional)"
-            className="rounded-lg border border-border bg-transparent px-2 py-1 text-xs text-muted"
-          />
+          <TimeRangeInputs />
         </div>
         <button
           type="submit"

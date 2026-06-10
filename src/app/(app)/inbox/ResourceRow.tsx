@@ -6,6 +6,7 @@ import {
   deleteResourceAction,
   planResourceAction,
 } from "./actions";
+import { TimeRangeInputs } from "@/components/TimeRangeInputs";
 
 type ChildOption = { id: string; name: string; color: string };
 type Resource = {
@@ -126,12 +127,7 @@ export function ResourceRow({
           maxLength={120}
           className="w-full bg-transparent text-sm font-medium text-foreground outline-none"
         />
-        <input
-          type="time"
-          name="time"
-          aria-label="Time (optional)"
-          className="rounded-lg border border-border bg-transparent px-2 py-1 text-xs text-muted"
-        />
+        <TimeRangeInputs />
 
         <div className="flex flex-wrap gap-1.5">
           {DAY_LABELS.map((label, i) => {

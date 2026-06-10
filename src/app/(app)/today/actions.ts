@@ -24,6 +24,7 @@ export async function createTaskAction(formData: FormData) {
   const description = String(formData.get("description") ?? "").trim();
   const url = String(formData.get("url") ?? "").trim();
   const time = String(formData.get("time") ?? "").trim();
+  const endTime = String(formData.get("endTime") ?? "").trim();
   const dateStr = String(formData.get("date") ?? "");
   const childIds = formData
     .getAll("childIds")
@@ -37,6 +38,8 @@ export async function createTaskAction(formData: FormData) {
     description: description || null,
     url: url || null,
     time: time || null,
+    // An end with no start is meaningless — drop it if there's no time.
+    endTime: time ? endTime || null : null,
     date: new Date(dateStr),
     childIds,
   });
@@ -62,6 +65,7 @@ export async function updateTaskAction(formData: FormData) {
   const description = String(formData.get("description") ?? "").trim();
   const url = String(formData.get("url") ?? "").trim();
   const time = String(formData.get("time") ?? "").trim();
+  const endTime = String(formData.get("endTime") ?? "").trim();
   const dateStr = String(formData.get("date") ?? "");
   const childIds = formData.getAll("childIds").map(String).filter(Boolean);
 
@@ -70,6 +74,7 @@ export async function updateTaskAction(formData: FormData) {
     description: description || null,
     url: url || null,
     time: time || null,
+    endTime: time ? endTime || null : null,
     ...(dateStr ? { date: new Date(dateStr) } : {}),
     childIds,
   });
@@ -77,16 +82,20 @@ export async function updateTaskAction(formData: FormData) {
 }
 
 // Slot a task into (or out of) a time, from the Schedule grid. Only touches the
-// `time` field — leaving title/notes/link/children/date untouched (updateTask
-// does a partial update). Empty time = back to "Anytime" (untimed is a
-// first-class, no-pressure state, ADR-0001).
-export async function setTaskTimeAction(formData: FormData) {
+// start/end time — leaving title/notes/link/children/date untouched (updateTask
+// does a partial update). Empty start = back to "Anytime" (untimed is a
+// first-class, no-pressure state, ADR-0001), which also clears any end.
+export async function setTaskTimesAction(formData: FormData) {
   const userId = await requireUserId();
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   const time = String(formData.get("time") ?? "").trim();
+  const endTime = String(formData.get("endTime") ?? "").trim();
 
-  await updateTask(userId, id, { time: time || null });
+  await updateTask(userId, id, {
+    time: time || null,
+    endTime: time ? endTime || null : null,
+  });
   revalidateToday();
 }
 

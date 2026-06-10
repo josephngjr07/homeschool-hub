@@ -10,8 +10,13 @@ import {
   nowMinutesInZone,
 } from "@/lib/date";
 import { AddTaskForm } from "./AddTaskForm";
-import { TaskItem } from "./TaskItem";
 import { ScheduleView } from "./ScheduleView";
+import { TaskRow } from "@/components/TaskRow";
+import {
+  setTaskCompletedAction,
+  updateTaskAction,
+  deleteTaskAction,
+} from "./actions";
 
 // The Today view — the single calm "what are we doing today?" screen. Shows the
 // whole family's Tasks for the current day, optionally filtered to one child
@@ -103,6 +108,7 @@ export default async function TodayPage({
                 id: t.id,
                 title: t.title,
                 time: t.time,
+                endTime: t.endTime,
                 completed: t.completed,
                 assignedTo: t.children,
               }))}
@@ -117,18 +123,27 @@ export default async function TodayPage({
             </p>
           ) : (
             tasks.map((t) => (
-              <TaskItem
+              <TaskRow
                 key={t.id}
-                id={t.id}
-                title={t.title}
-                description={t.description}
-                url={t.url}
-                linkUrl={t.url ?? t.resource?.url ?? null}
-                time={t.time}
-                date={toDateInputValue(t.date)}
-                completed={t.completed}
-                assignedTo={t.children}
+                task={{
+                  id: t.id,
+                  title: t.title,
+                  description: t.description,
+                  url: t.url,
+                  linkUrl: t.url ?? t.resource?.url ?? null,
+                  time: t.time,
+                  endTime: t.endTime,
+                  date: toDateInputValue(t.date),
+                  completed: t.completed,
+                  assignedTo: t.children,
+                }}
                 childOptions={children}
+                variant="today"
+                actions={{
+                  setCompleted: setTaskCompletedAction,
+                  update: updateTaskAction,
+                  remove: deleteTaskAction,
+                }}
               />
             ))
           )}

@@ -83,6 +83,7 @@ export async function planResource(
     title: string;
     description?: string | null;
     time?: string | null;
+    endTime?: string | null;
     weekStart: Date;
     weekdays: number[];
     childIds?: string[];
@@ -101,6 +102,7 @@ export async function planResource(
         title: input.title,
         description: input.description ?? null,
         time: input.time ?? null,
+        endTime: input.endTime ?? null,
         date: addDays(input.weekStart, offset),
         childIds: input.childIds,
         resourceId,
