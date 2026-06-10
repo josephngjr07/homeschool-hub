@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { formatTime, formatShortDate, addMinutesToTime } from "@/lib/date";
+import { formatTime, formatShortDate } from "@/lib/date";
+import { TimeRangeInputs } from "@/components/TimeRangeInputs";
 
 export type ChildOption = { id: string; name: string; color: string };
 
@@ -53,8 +54,6 @@ export function TaskRow({
   const [selected, setSelected] = useState<string[]>(
     task.assignedTo.map((c) => c.id),
   );
-  const [start, setStart] = useState(task.time ?? "");
-  const [end, setEnd] = useState(task.endTime ?? "");
 
   if (mode === "edit") {
     return (
@@ -132,29 +131,11 @@ export function TaskRow({
             aria-label="Move to date"
             className="rounded-lg border border-border bg-transparent px-2 py-1 text-xs text-muted"
           />
-          {/* Start time. Picking one defaults the end to +1h (editable). */}
-          <input
-            type="time"
-            name="time"
-            value={start}
-            onChange={(e) => {
-              const v = e.target.value;
-              setStart(v);
-              if (v && !end) setEnd(addMinutesToTime(v, 60));
-              if (!v) setEnd("");
-            }}
-            aria-label="Start time (optional)"
-            className="rounded-lg border border-border bg-transparent px-2 py-1 text-xs text-muted"
-          />
-          <span className="text-xs text-muted">–</span>
-          <input
-            type="time"
-            name="endTime"
-            value={end}
-            onChange={(e) => setEnd(e.target.value)}
-            disabled={!start}
-            aria-label="End time (optional)"
-            className="rounded-lg border border-border bg-transparent px-2 py-1 text-xs text-muted disabled:opacity-40"
+          {/* Uncontrolled (defaultValue) so the native time picker isn't fought
+              mid-keystroke; picking a start defaults the end to +1h. */}
+          <TimeRangeInputs
+            defaultStart={task.time ?? ""}
+            defaultEnd={task.endTime ?? ""}
           />
         </div>
 

@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { formatTime, addMinutesToTime } from "@/lib/date";
 import { setTaskCompletedAction, setTaskTimesAction } from "./actions";
+import { TimeRangeInputs } from "@/components/TimeRangeInputs";
 
 type ChildOption = { id: string; name: string; color: string };
 type GridTask = {
@@ -54,21 +55,11 @@ export function ScheduleView({
   tasks: GridTask[];
   nowMinutes: number;
 }) {
-  const [editing, setEditing] = useState<{
-    id: string;
-    start: string;
-    end: string;
-  } | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const untimed = tasks.filter((t) => !t.time);
   const timed = tasks.filter((t) => t.time);
-
-  function openEditor(t: GridTask) {
-    const start = t.time ?? "09:00";
-    const end = t.endTime ?? addMinutesToTime(start, 60);
-    setEditing({ id: t.id, start, end });
-  }
 
   function saveTimes(id: string, start: string, end: string) {
     const fd = new FormData();
@@ -78,7 +69,7 @@ export function ScheduleView({
     startTransition(async () => {
       await setTaskTimesAction(fd);
     });
-    setEditing(null);
+    setEditingId(null);
   }
 
   function clearTime(id: string) {
@@ -88,7 +79,7 @@ export function ScheduleView({
     startTransition(async () => {
       await setTaskTimesAction(fd);
     });
-    setEditing(null);
+    setEditingId(null);
   }
 
   function toggleComplete(id: string, completed: boolean) {
@@ -196,7 +187,7 @@ export function ScheduleView({
               <button
                 key={t.id}
                 type="button"
-                onClick={() => openEditor(t)}
+                onClick={() => setEditingId(t.id)}
                 className={`flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium transition hover:border-accent ${
                   t.completed ? "text-muted line-through" : "text-foreground"
                 }`}
@@ -215,13 +206,27 @@ export function ScheduleView({
         )}
       </div>
 
-      {/* Editor panel — appears when a block or Anytime chip is tapped. */}
-      {editing &&
+      {/* Editor panel — appears when a block or Anytime chip is tapped. Uses an
+          uncontrolled time pair (TimeRangeInputs) so the native picker isn't
+          fought mid-keystroke; `key` resets defaults when a different task is
+          opened. */}
+      {editingId &&
         (() => {
-          const t = tasks.find((x) => x.id === editing.id);
+          const t = tasks.find((x) => x.id === editingId);
           if (!t) return null;
+          const defStart = t.time ?? "09:00";
+          const defEnd = t.endTime ?? addMinutesToTime(defStart, 60);
           return (
-            <div className="mt-3 space-y-3 rounded-2xl border border-border bg-card p-3 shadow-sm">
+            <form
+              key={editingId}
+              action={(fd) => {
+                const s = String(fd.get("time") ?? "");
+                const e = String(fd.get("endTime") ?? "");
+                if (s) saveTimes(t.id, s, e);
+                else clearTime(t.id);
+              }}
+              className="mt-3 space-y-3 rounded-2xl border border-border bg-card p-3 shadow-sm"
+            >
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -244,42 +249,13 @@ export function ScheduleView({
                   {t.title}
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <input
-                  type="time"
-                  value={editing.start}
-                  aria-label="Start time"
-                  onChange={(e) =>
-                    setEditing((s) =>
-                      s
-                        ? {
-                            ...s,
-                            start: e.target.value,
-                            end:
-                              e.target.value && s.end <= e.target.value
-                                ? addMinutesToTime(e.target.value, 60)
-                                : s.end,
-                          }
-                        : s,
-                    )
-                  }
-                  className="rounded-lg border border-border bg-transparent px-2 py-1 text-xs text-foreground"
-                />
-                <span className="text-xs text-muted">–</span>
-                <input
-                  type="time"
-                  value={editing.end}
-                  aria-label="End time"
-                  onChange={(e) =>
-                    setEditing((s) => (s ? { ...s, end: e.target.value } : s))
-                  }
-                  className="rounded-lg border border-border bg-transparent px-2 py-1 text-xs text-foreground"
-                />
-              </div>
+
+              <TimeRangeInputs defaultStart={defStart} defaultEnd={defEnd} />
+
               <div className="flex items-center justify-between gap-3">
                 <button
                   type="button"
-                  onClick={() => clearTime(editing.id)}
+                  onClick={() => clearTime(t.id)}
                   className="text-xs text-muted hover:text-foreground"
                 >
                   Back to Anytime
@@ -287,23 +263,20 @@ export function ScheduleView({
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => setEditing(null)}
+                    onClick={() => setEditingId(null)}
                     className="text-xs text-muted hover:text-foreground"
                   >
                     Cancel
                   </button>
                   <button
-                    type="button"
-                    onClick={() =>
-                      saveTimes(editing.id, editing.start, editing.end)
-                    }
+                    type="submit"
                     className="rounded-lg bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:opacity-90"
                   >
                     Save time
                   </button>
                 </div>
               </div>
-            </div>
+            </form>
           );
         })()}
 
@@ -350,7 +323,7 @@ export function ScheduleView({
             <button
               key={t.id}
               type="button"
-              onClick={() => openEditor(t)}
+              onClick={() => setEditingId(t.id)}
               style={{
                 top,
                 height,
