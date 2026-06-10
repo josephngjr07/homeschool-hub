@@ -10,7 +10,11 @@
     "test:watch": "vitest",
     "lint": "eslint",
     "reset:account": "node scripts/reset-account.mjs",
+    "migrate:prod": "node --env-file=.env.production.local scripts/migrate-prod.mjs",
     "postinstall": "prisma generate"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
