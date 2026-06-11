@@ -91,7 +91,7 @@ export async function planResource(
 ) {
   const resource = await prisma.resource.findFirst({
     where: { id: resourceId, userId },
-    select: { id: true },
+    select: { id: true, url: true },
   });
   if (!resource) return null;
 
@@ -101,6 +101,9 @@ export async function planResource(
       await createTask(userId, {
         title: input.title,
         description: input.description ?? null,
+        // Copy the captured link onto the Task so it's self-contained — the link
+        // shows in the task editor and survives if the Resource is later deleted.
+        url: resource.url,
         time: input.time ?? null,
         endTime: input.endTime ?? null,
         date: addDays(input.weekStart, offset),
