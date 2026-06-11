@@ -154,8 +154,23 @@ export default async function DashboardPage() {
       >
         <button
           type="submit"
-          className="text-sm text-muted hover:text-foreground"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-background active:scale-[0.99]"
         >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden
+          >
+            <path
+              d="M15 12H4m0 0 3.5-3.5M4 12l3.5 3.5M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"
+              stroke="currentColor"
+              strokeWidth={1.7}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
           Sign out
         </button>
       </form>
