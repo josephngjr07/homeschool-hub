@@ -8,6 +8,7 @@ import {
 } from "./actions";
 import { TimeRangeInputs } from "@/components/TimeRangeInputs";
 import { toLinkHref } from "@/lib/url";
+import { addDays, formatShortDate, toDateInputValue } from "@/lib/date";
 
 type ChildOption = { id: string; name: string; color: string };
 type Resource = {
@@ -37,6 +38,15 @@ export function ResourceRow({
   const [mode, setMode] = useState<"view" | "plan" | "edit">("view");
   const [weekdays, setWeekdays] = useState<number[]>([]);
   const [selected, setSelected] = useState<string[]>(allIds);
+  // Which week to plan into. Starts at the current week (the prop); the parent
+  // can step forward to plan ahead. Never earlier than this week — planning into
+  // the past makes no sense. ISO YYYY-MM-DD strings compare lexicographically.
+  const [planWeek, setPlanWeek] = useState(weekStart);
+  const planWeekDate = new Date(planWeek);
+  const atCurrentWeek = planWeek <= weekStart;
+  const isThisWeek = planWeek === weekStart;
+  const stepWeek = (delta: number) =>
+    setPlanWeek((w) => toDateInputValue(addDays(new Date(w), delta * 7)));
 
   const heading = resource.title || resource.url || "Untitled";
   const link = toLinkHref(resource.url);
@@ -130,11 +140,12 @@ export function ResourceRow({
           // On success the resource drains out of the Inbox and this row
           // unmounts; resetting state is just tidiness if it lingers.
           setMode("view");
+          setPlanWeek(weekStart);
         }}
         className="space-y-3 rounded-2xl border border-border bg-card p-4"
       >
         <input type="hidden" name="id" value={resource.id} />
-        <input type="hidden" name="weekStart" value={weekStart} />
+        <input type="hidden" name="weekStart" value={planWeek} />
         <input
           name="title"
           defaultValue={heading}
@@ -143,6 +154,37 @@ export function ResourceRow({
           className="w-full bg-transparent text-sm font-medium text-foreground outline-none"
         />
         <TimeRangeInputs />
+
+        {/* Which week to plan into — step forward to plan ahead. */}
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs text-muted">Week of</span>
+          <div className="flex items-center gap-1 text-xs">
+            <button
+              type="button"
+              onClick={() => stepWeek(-1)}
+              disabled={atCurrentWeek}
+              aria-label="Previous week"
+              className="rounded px-1.5 py-0.5 text-muted hover:text-foreground disabled:opacity-30"
+            >
+              ←
+            </button>
+            <span className="min-w-[7.5rem] text-center font-medium text-foreground">
+              {isThisWeek
+                ? "This week"
+                : `${formatShortDate(planWeekDate)} – ${formatShortDate(
+                    addDays(planWeekDate, 6),
+                  )}`}
+            </span>
+            <button
+              type="button"
+              onClick={() => stepWeek(1)}
+              aria-label="Next week"
+              className="rounded px-1.5 py-0.5 text-muted hover:text-foreground"
+            >
+              →
+            </button>
+          </div>
+        </div>
 
         <div className="flex items-center justify-between gap-2">
           <span className="text-xs text-muted">Repeat on</span>
@@ -221,7 +263,10 @@ export function ResourceRow({
         <div className="flex items-center justify-end gap-3">
           <button
             type="button"
-            onClick={() => setMode("view")}
+            onClick={() => {
+              setMode("view");
+              setPlanWeek(weekStart);
+            }}
             className="text-xs text-muted hover:text-foreground"
           >
             Cancel
