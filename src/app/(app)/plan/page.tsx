@@ -16,6 +16,7 @@ import {
 import { PlanAddForm } from "./PlanAddForm";
 import { TaskRow } from "@/components/TaskRow";
 import { ConfirmClearButton } from "@/components/ConfirmClearButton";
+import { toLinkHref } from "@/lib/url";
 import {
   copyWeekAction,
   clearWeekAction,
@@ -145,7 +146,7 @@ export default async function PlanPage({
                         title: t.title,
                         description: t.description,
                         url: t.url,
-                        linkUrl: t.url ?? t.resource?.url ?? null,
+                        linkUrl: toLinkHref(t.url ?? t.resource?.url),
                         time: t.time,
                         endTime: t.endTime,
                         date: toDateInputValue(t.date),

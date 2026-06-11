@@ -7,6 +7,7 @@ import {
   planResourceAction,
 } from "./actions";
 import { TimeRangeInputs } from "@/components/TimeRangeInputs";
+import { toLinkHref } from "@/lib/url";
 
 type ChildOption = { id: string; name: string; color: string };
 type Resource = {
@@ -19,21 +20,6 @@ type Resource = {
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const WEEKDAYS = [0, 1, 2, 3, 4]; // Mon–Fri
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
-
-// A parent may type free-text notes into the link field, so only treat it as a
-// clickable link when it actually parses as an http(s) URL — otherwise an
-// "Open" tap would just lead to a 404.
-function asHyperlink(value: string | null): string | null {
-  if (!value) return null;
-  try {
-    const url = new URL(value.trim());
-    return url.protocol === "http:" || url.protocol === "https:"
-      ? url.href
-      : null;
-  } catch {
-    return null;
-  }
-}
 
 // One Inbox Resource. Three modes: view (the captured idea, with Plan / Edit),
 // plan (choose day(s) + who, turning it into Task rows), and edit (fix the
@@ -53,7 +39,7 @@ export function ResourceRow({
   const [selected, setSelected] = useState<string[]>(allIds);
 
   const heading = resource.title || resource.url || "Untitled";
-  const link = asHyperlink(resource.url);
+  const link = toLinkHref(resource.url);
 
   const toggleDay = (i: number) =>
     setWeekdays((d) => (d.includes(i) ? d.filter((x) => x !== i) : [...d, i]));
