@@ -24,7 +24,7 @@ export function ConfirmClearButton({
       <button
         type="button"
         onClick={() => setArmed(true)}
-        className="text-xs font-medium text-red-700/70 hover:text-red-700"
+        className="text-xs font-medium text-muted hover:text-foreground"
       >
         {label}
       </button>
@@ -44,7 +44,7 @@ export function ConfirmClearButton({
       </span>
       <button
         type="submit"
-        className="font-medium text-red-700 hover:underline"
+        className="rounded-full bg-accent-strong/10 px-3 py-1 font-medium text-accent-strong hover:bg-accent-strong/20"
       >
         Delete
       </button>

@@ -18,6 +18,21 @@ type Resource = {
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+// A parent may type free-text notes into the link field, so only treat it as a
+// clickable link when it actually parses as an http(s) URL — otherwise an
+// "Open" tap would just lead to a 404.
+function asHyperlink(value: string | null): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "http:" || url.protocol === "https:"
+      ? url.href
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 // One Inbox Resource. Three modes: view (the captured idea, with Plan / Edit),
 // plan (choose day(s) + who, turning it into Task rows), and edit (fix the
 // captured fields, or delete). Planning drains it out of the Inbox.
@@ -36,6 +51,7 @@ export function ResourceRow({
   const [selected, setSelected] = useState<string[]>(allIds);
 
   const heading = resource.title || resource.url || "Untitled";
+  const link = asHyperlink(resource.url);
 
   const toggleDay = (i: number) =>
     setWeekdays((d) => (d.includes(i) ? d.filter((x) => x !== i) : [...d, i]));
@@ -202,9 +218,9 @@ export function ResourceRow({
         <p className="mt-0.5 text-xs text-muted">{resource.note}</p>
       ) : null}
       <div className="mt-2 flex items-center gap-4 text-xs">
-        {resource.url ? (
+        {link ? (
           <a
-            href={resource.url}
+            href={link}
             target="_blank"
             rel="noopener noreferrer"
             className="font-medium text-accent-strong hover:underline"
