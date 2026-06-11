@@ -7,6 +7,8 @@ import { TimeRangeInputs } from "@/components/TimeRangeInputs";
 type ChildOption = { id: string; name: string; color: string };
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WEEKDAYS = [0, 1, 2, 3, 4]; // Mon–Fri
+const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
 
 // Add a task to one or more weekdays at once (S5 recurrence). Each selected day
 // becomes an independent Task. Assignment defaults to everyone.
@@ -24,6 +26,17 @@ export function PlanAddForm({
 
   const toggleDay = (i: number) =>
     setWeekdays((d) => (d.includes(i) ? d.filter((x) => x !== i) : [...d, i]));
+  // Quick-select a preset (Mon–Fri or every day), matching the starter-week
+  // setup. Tapping the active preset again clears it back to no days.
+  const setPreset = (preset: number[]) =>
+    setWeekdays((d) => {
+      const same =
+        d.length === preset.length && preset.every((x) => d.includes(x));
+      return same ? [] : preset;
+    });
+  const isWeekdays =
+    weekdays.length === 5 && WEEKDAYS.every((x) => weekdays.includes(x));
+  const isDaily = weekdays.length === 7;
   const toggleChild = (id: string) =>
     setSelected((s) =>
       s.includes(id) ? s.filter((x) => x !== id) : [...s, id],
@@ -66,7 +79,35 @@ export function PlanAddForm({
         <TimeRangeInputs />
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-1.5">
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <span className="text-xs text-muted">Repeat on</span>
+        <div className="flex gap-1 text-[10px]">
+          <button
+            type="button"
+            onClick={() => setPreset(WEEKDAYS)}
+            className={`rounded px-1.5 py-0.5 font-medium transition ${
+              isWeekdays
+                ? "bg-accent/15 text-accent-strong"
+                : "text-muted hover:text-foreground"
+            }`}
+          >
+            Weekdays
+          </button>
+          <button
+            type="button"
+            onClick={() => setPreset(ALL_DAYS)}
+            className={`rounded px-1.5 py-0.5 font-medium transition ${
+              isDaily
+                ? "bg-accent/15 text-accent-strong"
+                : "text-muted hover:text-foreground"
+            }`}
+          >
+            Daily
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-2 flex flex-wrap gap-1.5">
         {DAY_LABELS.map((label, i) => {
           const on = weekdays.includes(i);
           return (
