@@ -1,6 +1,6 @@
 # Homeschool Hub
 
-![Homeschool Hub — the Today view showing a calm daily schedule](docs/screenshot.png)
+<img src="docs/screenshot.png" alt="Homeschool Hub — the Today view showing a calm daily schedule" width="420" />
 
 A calm planning tool for newcomer homeschooling parents. It acts as a trusted
 "external brain" built around a weekly rhythm — **capture** ideas, **plan** the
