@@ -10,6 +10,7 @@
     "test:watch": "vitest",
     "lint": "eslint",
     "reset:account": "node scripts/reset-account.mjs",
+    "reset:prod": "node --env-file=.env.production.local scripts/reset-account.mjs",
     "migrate:prod": "node --env-file=.env.production.local scripts/migrate-prod.mjs",
     "postinstall": "prisma generate"
   },
