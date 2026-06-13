@@ -7,7 +7,10 @@ import { PrismaClient } from "@prisma/client";
 // onboarding again. Operates on whatever DATABASE_URL points at (the shared
 // Neon DB in this project), so it's intentionally explicit: pass the email.
 //
-// Usage: npm run reset:account -- you@example.com
+// Usage (local dev DB):  npm run reset:account -- you@example.com
+// Usage (LIVE Neon DB):  npm run reset:prod   -- you@example.com
+// (reset:prod loads .env.production.local first so it targets production —
+//  double-check the email so you only ever reset your OWN account.)
 
 const email = process.argv[2];
 if (!email) {
